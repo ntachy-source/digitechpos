@@ -26,7 +26,7 @@ const Auth = () => {
   const { user, loading } = useAuth();
 
   useEffect(() => {
-    document.title = mode === "signin" ? "Sign in · ScanPOS" : "Create account · ScanPOS";
+    document.title = mode === "signin" ? "Sign in · SGH POS" : "Create account · SGH POS";
   }, [mode]);
 
   useEffect(() => {
@@ -71,7 +71,7 @@ const Auth = () => {
           <div className="mx-auto h-12 w-12 rounded-xl bg-gradient-primary flex items-center justify-center shadow-card">
             <ScanLine className="h-6 w-6 text-primary-foreground" />
           </div>
-          <CardTitle className="text-2xl">ScanPOS</CardTitle>
+          <CardTitle className="text-2xl">SGH POS</CardTitle>
           <CardDescription>
             {mode === "signin" ? "Sign in to your gadget store" : "Create a new admin account"}
           </CardDescription>
