@@ -15,11 +15,27 @@ import { toast } from "sonner";
 import { generateQrPayload } from "@/lib/qr";
 import { QrPrintDialog } from "@/components/QrPrintDialog";
 
+const CATEGORIES = [
+  "Mobile Phone",
+  "Smart Watch",
+  "Tablet",
+  "Laptop",
+  "Headphones / Earbuds",
+  "Phone Cover",
+  "Screen Protector",
+  "Charger / Cable",
+  "Power Bank",
+  "Speaker",
+  "Camera",
+  "Accessory",
+  "Other",
+];
+
 const productSchema = z.object({
   brand: z.string().trim().min(1).max(60),
   model: z.string().trim().min(1).max(80),
   category: z.string().trim().min(1).max(40),
-  imei_serial: z.string().trim().min(4).max(32),
+  imei_serial: z.string().trim().min(1).max(64),
   cost_price: z.number().nonnegative(),
   sale_price: z.number().nonnegative(),
   notes: z.string().max(500).optional(),
@@ -30,6 +46,7 @@ const Inventory = () => {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [printProduct, setPrintProduct] = useState<any | null>(null);
+  const [customCategory, setCustomCategory] = useState(false);
   const [form, setForm] = useState({
     brand: "", model: "", category: "Mobile Phone",
     imei_serial: "", cost_price: "", sale_price: "", notes: "",
