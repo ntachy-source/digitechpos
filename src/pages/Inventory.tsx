@@ -8,17 +8,34 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, QrCode, Trash2, Search } from "lucide-react";
 import { toast } from "sonner";
 import { generateQrPayload } from "@/lib/qr";
 import { QrPrintDialog } from "@/components/QrPrintDialog";
 
+const CATEGORIES = [
+  "Mobile Phone",
+  "Smart Watch",
+  "Tablet",
+  "Laptop",
+  "Headphones / Earbuds",
+  "Phone Cover",
+  "Screen Protector",
+  "Charger / Cable",
+  "Power Bank",
+  "Speaker",
+  "Camera",
+  "Accessory",
+  "Other",
+];
+
 const productSchema = z.object({
   brand: z.string().trim().min(1).max(60),
   model: z.string().trim().min(1).max(80),
   category: z.string().trim().min(1).max(40),
-  imei_serial: z.string().trim().min(4).max(32),
+  imei_serial: z.string().trim().min(1).max(64),
   cost_price: z.number().nonnegative(),
   sale_price: z.number().nonnegative(),
   notes: z.string().max(500).optional(),
@@ -29,6 +46,7 @@ const Inventory = () => {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [printProduct, setPrintProduct] = useState<any | null>(null);
+  const [customCategory, setCustomCategory] = useState(false);
   const [form, setForm] = useState({
     brand: "", model: "", category: "Mobile Phone",
     imei_serial: "", cost_price: "", sale_price: "", notes: "",
@@ -107,8 +125,32 @@ const Inventory = () => {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2"><Label>Category</Label>
-                  <Input value={form.category} onChange={e => setForm({...form, category: e.target.value})} required /></div>
-                <div className="space-y-2"><Label>IMEI / Serial</Label>
+                  {customCategory ? (
+                    <Input
+                      placeholder="Enter category"
+                      value={form.category}
+                      onChange={e => setForm({ ...form, category: e.target.value })}
+                      onBlur={() => { if (!form.category.trim()) { setCustomCategory(false); setForm({ ...form, category: "Mobile Phone" }); } }}
+                      autoFocus
+                      required
+                    />
+                  ) : (
+                    <Select
+                      value={form.category}
+                      onValueChange={(v) => {
+                        if (v === "__custom__") { setCustomCategory(true); setForm({ ...form, category: "" }); }
+                        else setForm({ ...form, category: v });
+                      }}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                        <SelectItem value="__custom__">+ Custom…</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+                <div className="space-y-2"><Label>IMEI / Serial / SKU</Label>
                   <Input value={form.imei_serial} onChange={e => setForm({...form, imei_serial: e.target.value})} required /></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
