@@ -125,8 +125,32 @@ const Inventory = () => {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2"><Label>Category</Label>
-                  <Input value={form.category} onChange={e => setForm({...form, category: e.target.value})} required /></div>
-                <div className="space-y-2"><Label>IMEI / Serial</Label>
+                  {customCategory ? (
+                    <Input
+                      placeholder="Enter category"
+                      value={form.category}
+                      onChange={e => setForm({ ...form, category: e.target.value })}
+                      onBlur={() => { if (!form.category.trim()) { setCustomCategory(false); setForm({ ...form, category: "Mobile Phone" }); } }}
+                      autoFocus
+                      required
+                    />
+                  ) : (
+                    <Select
+                      value={form.category}
+                      onValueChange={(v) => {
+                        if (v === "__custom__") { setCustomCategory(true); setForm({ ...form, category: "" }); }
+                        else setForm({ ...form, category: v });
+                      }}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                        <SelectItem value="__custom__">+ Custom…</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+                <div className="space-y-2"><Label>IMEI / Serial / SKU</Label>
                   <Input value={form.imei_serial} onChange={e => setForm({...form, imei_serial: e.target.value})} required /></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
