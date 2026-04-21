@@ -29,7 +29,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
             <ScanBarcode className="h-5 w-5 text-primary-foreground" />
           </div>
           <div>
-            <p className="font-semibold tracking-tight">ScanPOS</p>
+            <p className="font-semibold tracking-tight">SGH POS</p>
             <p className="text-xs text-muted-foreground">Gadget Store</p>
           </div>
         </div>

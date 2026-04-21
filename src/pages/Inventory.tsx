@@ -52,7 +52,7 @@ const Inventory = () => {
     imei_serial: "", cost_price: "", sale_price: "", notes: "",
   });
 
-  useEffect(() => { document.title = "Inventory · ScanPOS"; load(); }, []);
+  useEffect(() => { document.title = "Inventory · SGH POS"; load(); }, []);
 
   const load = async () => {
     const { data, error } = await supabase
