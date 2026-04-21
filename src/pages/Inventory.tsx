@@ -53,11 +53,11 @@ const Inventory = () => {
     if (!parsed.success) { toast.error(parsed.error.errors[0].message); return; }
 
     const { data: { user } } = await supabase.auth.getUser();
-    const { data, error } = await supabase.from("products").insert({
+    const { data, error } = await supabase.from("products").insert([{
       ...parsed.data,
       qr_code: generateQrPayload(parsed.data.imei_serial),
       created_by: user?.id,
-    }).select().single();
+    }]).select().single();
 
     if (error) { toast.error(error.message); return; }
     toast.success("Product added");
