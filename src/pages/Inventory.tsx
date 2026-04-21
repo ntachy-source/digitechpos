@@ -54,7 +54,13 @@ const Inventory = () => {
 
     const { data: { user } } = await supabase.auth.getUser();
     const { data, error } = await supabase.from("products").insert([{
-      ...parsed.data,
+      brand: parsed.data.brand,
+      model: parsed.data.model,
+      category: parsed.data.category,
+      imei_serial: parsed.data.imei_serial,
+      cost_price: parsed.data.cost_price,
+      sale_price: parsed.data.sale_price,
+      notes: parsed.data.notes,
       qr_code: generateQrPayload(parsed.data.imei_serial),
       created_by: user?.id,
     }]).select().single();
