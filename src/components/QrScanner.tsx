@@ -36,6 +36,7 @@ export const QrScanner = ({ onResult, onError }: Props) => {
       },
     };
 
+    let started = false;
     scanner
       .start(
         { facingMode: { ideal: "environment" } } as any,
@@ -48,10 +49,20 @@ export const QrScanner = ({ onResult, onError }: Props) => {
         },
         () => { /* ignore per-frame errors */ }
       )
+      .then(() => { started = true; })
       .catch((e) => onError?.(String(e)));
 
     return () => {
-      scanner.stop().then(() => scanner.clear()).catch(() => {});
+      try {
+        // @ts-ignore - getState exists on Html5Qrcode
+        const state = typeof scanner.getState === "function" ? scanner.getState() : 0;
+        // 2 = SCANNING, 3 = PAUSED
+        if (started || state === 2 || state === 3) {
+          scanner.stop().then(() => scanner.clear()).catch(() => {});
+        } else {
+          try { scanner.clear(); } catch { /* noop */ }
+        }
+      } catch { /* noop */ }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
