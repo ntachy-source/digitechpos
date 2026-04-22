@@ -1,8 +1,8 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Printer } from "lucide-react";
-import { renderQrToCanvas } from "@/lib/qr";
+import { renderQrToDataUrl } from "@/lib/qr";
 
 interface Props {
   open: boolean;
@@ -11,17 +11,18 @@ interface Props {
 }
 
 export const QrPrintDialog = ({ open, onOpenChange, product }: Props) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [dataUrl, setDataUrl] = useState<string>("");
 
   useEffect(() => {
-    if (open && product && canvasRef.current) {
-      renderQrToCanvas(canvasRef.current, product.qr_code);
+    if (open && product) {
+      renderQrToDataUrl(product.qr_code).then(setDataUrl).catch(() => setDataUrl(""));
+    } else {
+      setDataUrl("");
     }
   }, [open, product]);
 
   const handlePrint = () => {
-    if (!canvasRef.current || !product) return;
-    const dataUrl = canvasRef.current.toDataURL("image/png");
+    if (!dataUrl || !product) return;
     const w = window.open("", "_blank", "width=400,height=600");
     if (!w) return;
     w.document.write(`
@@ -56,8 +57,8 @@ export const QrPrintDialog = ({ open, onOpenChange, product }: Props) => {
         </DialogHeader>
         {product && (
           <div className="space-y-4 text-center">
-            <div className="flex justify-center bg-white rounded-lg p-4 border">
-              <canvas ref={canvasRef} />
+            <div className="flex justify-center bg-white rounded-lg p-4 border min-h-[260px] items-center">
+              {dataUrl ? <img src={dataUrl} alt="QR code" className="w-56 h-56" /> : <span className="text-sm text-muted-foreground">Generating…</span>}
             </div>
             <div>
               <p className="font-semibold">{product.brand} {product.model}</p>
