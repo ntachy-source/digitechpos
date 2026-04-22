@@ -9,6 +9,7 @@ import { ScanLine, X, CheckCircle2, Camera, Keyboard } from "lucide-react";
 import { toast } from "sonner";
 import { parseQrPayload } from "@/lib/qr";
 import { QrScanner } from "@/components/QrScanner";
+import { ReceiptDialog, type ReceiptData } from "@/components/ReceiptDialog";
 
 interface CartItem { id: string; brand: string; model: string; imei_serial: string; sale_price: number; }
 
@@ -19,6 +20,7 @@ const POS = () => {
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [busy, setBusy] = useState(false);
+  const [receipt, setReceipt] = useState<ReceiptData | null>(null);
 
   const total = cart.reduce((s, i) => s + Number(i.sale_price), 0);
 
@@ -49,6 +51,12 @@ const POS = () => {
   const checkout = async () => {
     if (cart.length === 0) return toast.error("Cart is empty");
     setBusy(true);
+    const snapshotItems = cart.map(c => ({
+      brand: c.brand, model: c.model, imei_serial: c.imei_serial, sale_price: Number(c.sale_price),
+    }));
+    const snapshotTotal = total;
+    const snapshotName = customerName;
+    const snapshotPhone = customerPhone;
     const { data, error } = await supabase.rpc("process_sale", {
       _product_ids: cart.map(c => c.id),
       _customer_name: customerName || null,
@@ -56,7 +64,15 @@ const POS = () => {
     });
     setBusy(false);
     if (error) return toast.error(error.message);
-    toast.success(`Sale completed! Total: $${total.toFixed(2)}`);
+    toast.success(`Sale completed! Total: $${snapshotTotal.toFixed(2)}`);
+    setReceipt({
+      saleId: data as string,
+      createdAt: new Date().toISOString(),
+      customerName: snapshotName,
+      customerPhone: snapshotPhone,
+      items: snapshotItems,
+      total: snapshotTotal,
+    });
     setCart([]); setCustomerName(""); setCustomerPhone("");
   };
 
@@ -141,6 +157,8 @@ const POS = () => {
           </CardContent>
         </Card>
       </div>
+
+      <ReceiptDialog open={!!receipt} onOpenChange={(o) => !o && setReceipt(null)} receipt={receipt} />
     </div>
   );
 };
