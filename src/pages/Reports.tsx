@@ -45,8 +45,8 @@ const Reports = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Reports</h1>
-        <p className="text-muted-foreground mt-1">Last 7 days of sales activity.</p>
+        <h1 className="text-2xl sm:text-3xl font-bold">Reports</h1>
+        <p className="text-muted-foreground mt-1 text-sm sm:text-base">Last 7 days of sales activity.</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -83,31 +83,33 @@ const Reports = () => {
       <Card className="border-border/60 shadow-card">
         <CardHeader><CardTitle>Recent Sales</CardTitle></CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Items</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {recent.length === 0 && (
-                <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">No sales yet.</TableCell></TableRow>
-              )}
-              {recent.map((s: any) => (
-                <TableRow key={s.id}>
-                  <TableCell className="text-sm">{format(new Date(s.created_at), "MMM d, HH:mm")}</TableCell>
-                  <TableCell className="text-sm">
-                    {s.sale_items?.map((si: any) => `${si.products?.brand} ${si.products?.model}`).join(", ") || "—"}
-                  </TableCell>
-                  <TableCell className="text-sm">{s.customer_name || "—"}</TableCell>
-                  <TableCell className="text-right font-medium">${Number(s.total).toFixed(2)}</TableCell>
+          <div className="overflow-x-auto -mx-2 sm:mx-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Items</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {recent.length === 0 && (
+                  <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">No sales yet.</TableCell></TableRow>
+                )}
+                {recent.map((s: any) => (
+                  <TableRow key={s.id}>
+                    <TableCell className="text-sm whitespace-nowrap">{format(new Date(s.created_at), "MMM d, HH:mm")}</TableCell>
+                    <TableCell className="text-sm max-w-[200px] truncate">
+                      {s.sale_items?.map((si: any) => `${si.products?.brand} ${si.products?.model}`).join(", ") || "—"}
+                    </TableCell>
+                    <TableCell className="text-sm">{s.customer_name || "—"}</TableCell>
+                    <TableCell className="text-right font-medium whitespace-nowrap">${Number(s.total).toFixed(2)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

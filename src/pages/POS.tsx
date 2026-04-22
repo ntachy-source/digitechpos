@@ -79,11 +79,11 @@ const POS = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Point of Sale</h1>
-        <p className="text-muted-foreground mt-1">Scan a product QR code to add it to the cart.</p>
+        <h1 className="text-2xl sm:text-3xl font-bold">Point of Sale</h1>
+        <p className="text-muted-foreground mt-1 text-sm sm:text-base">Scan a product QR code to add it to the cart.</p>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
         <Card className="border-border/60 shadow-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><ScanLine className="h-5 w-5 text-primary" /> Scan</CardTitle>
@@ -134,7 +134,7 @@ const POS = () => {
               ))}
             </div>
 
-            <div className="grid grid-cols-2 gap-2 pt-2 border-t">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t">
               <div className="space-y-1">
                 <Label className="text-xs">Customer name</Label>
                 <Input value={customerName} onChange={e => setCustomerName(e.target.value)} maxLength={100} />

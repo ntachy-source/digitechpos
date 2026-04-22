@@ -147,23 +147,23 @@ const Inventory = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-4">
+      <div className="flex items-start sm:items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Inventory</h1>
-          <p className="text-muted-foreground mt-1">Manage products and generate QR labels.</p>
+          <h1 className="text-2xl sm:text-3xl font-bold">Inventory</h1>
+          <p className="text-muted-foreground mt-1 text-sm sm:text-base">Manage products and generate QR labels.</p>
         </div>
-        <Button onClick={openAdd}><Plus className="h-4 w-4 mr-2" /> Add Product</Button>
+        <Button onClick={openAdd} className="w-full sm:w-auto"><Plus className="h-4 w-4 mr-2" /> Add Product</Button>
         <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setEditingId(null); setForm(emptyForm); } }}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader><DialogTitle>{editingId ? "Edit Product" : "Stock-in New Product"}</DialogTitle></DialogHeader>
             <form onSubmit={submit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-2"><Label>Brand</Label>
                   <Input value={form.brand} onChange={e => setForm({...form, brand: e.target.value})} required /></div>
                 <div className="space-y-2"><Label>Model</Label>
                   <Input value={form.model} onChange={e => setForm({...form, model: e.target.value})} required /></div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-2"><Label>Category</Label>
                   {customCategory ? (
                     <Input
@@ -193,7 +193,7 @@ const Inventory = () => {
                 <div className="space-y-2"><Label>IMEI / Serial / SKU</Label>
                   <Input value={form.imei_serial} onChange={e => setForm({...form, imei_serial: e.target.value})} required /></div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-2"><Label>Cost Price</Label>
                   <Input type="number" step="0.01" value={form.cost_price} onChange={e => setForm({...form, cost_price: e.target.value})} required /></div>
                 <div className="space-y-2"><Label>Sale Price</Label>
@@ -209,49 +209,82 @@ const Inventory = () => {
 
       <Card className="border-border/60 shadow-card">
         <CardHeader>
-          <div className="relative max-w-sm">
+          <div className="relative w-full sm:max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Search brand, model, IMEI..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Product</TableHead>
-                <TableHead>IMEI / Serial</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Price</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.length === 0 && (
-                <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No products yet.</TableCell></TableRow>
-              )}
-              {filtered.map(p => (
-                <TableRow key={p.id}>
-                  <TableCell>
-                    <div className="font-medium">{p.brand} {p.model}</div>
-                    <div className="text-xs text-muted-foreground">{p.category}</div>
-                  </TableCell>
-                  <TableCell className="font-mono text-xs">{p.imei_serial}</TableCell>
-                  <TableCell>
-                    <Badge variant={p.status === "in_stock" ? "default" : "secondary"}
-                      className={p.status === "in_stock" ? "bg-success text-success-foreground" : ""}>
-                      {p.status === "in_stock" ? "In Stock" : "Sold"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right font-medium">${Number(p.sale_price).toFixed(2)}</TableCell>
-                  <TableCell className="text-right">
+          {/* Mobile card list */}
+          <div className="md:hidden space-y-3">
+            {filtered.length === 0 && (
+              <p className="text-center text-muted-foreground py-8 text-sm">No products yet.</p>
+            )}
+            {filtered.map(p => (
+              <div key={p.id} className="rounded-lg border p-3 bg-card space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">{p.brand} {p.model}</p>
+                    <p className="text-xs text-muted-foreground">{p.category}</p>
+                    <p className="text-xs font-mono text-muted-foreground truncate mt-1">{p.imei_serial}</p>
+                  </div>
+                  <Badge variant={p.status === "in_stock" ? "default" : "secondary"}
+                    className={p.status === "in_stock" ? "bg-success text-success-foreground shrink-0" : "shrink-0"}>
+                    {p.status === "in_stock" ? "In Stock" : "Sold"}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between pt-1">
+                  <span className="font-semibold">${Number(p.sale_price).toFixed(2)}</span>
+                  <div className="flex">
                     <Button variant="ghost" size="icon" title="Print QR" onClick={() => setPrintProduct(p)}><QrCode className="h-4 w-4" /></Button>
                     <Button variant="ghost" size="icon" title="Edit" onClick={() => openEdit(p)}><Pencil className="h-4 w-4" /></Button>
                     <Button variant="ghost" size="icon" title="Delete" onClick={() => remove(p)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                  </TableCell>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden md:block overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Product</TableHead>
+                  <TableHead>IMEI / Serial</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Price</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filtered.length === 0 && (
+                  <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No products yet.</TableCell></TableRow>
+                )}
+                {filtered.map(p => (
+                  <TableRow key={p.id}>
+                    <TableCell>
+                      <div className="font-medium">{p.brand} {p.model}</div>
+                      <div className="text-xs text-muted-foreground">{p.category}</div>
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">{p.imei_serial}</TableCell>
+                    <TableCell>
+                      <Badge variant={p.status === "in_stock" ? "default" : "secondary"}
+                        className={p.status === "in_stock" ? "bg-success text-success-foreground" : ""}>
+                        {p.status === "in_stock" ? "In Stock" : "Sold"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-medium">${Number(p.sale_price).toFixed(2)}</TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="icon" title="Print QR" onClick={() => setPrintProduct(p)}><QrCode className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon" title="Edit" onClick={() => openEdit(p)}><Pencil className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon" title="Delete" onClick={() => remove(p)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 
