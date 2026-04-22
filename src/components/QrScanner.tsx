@@ -18,13 +18,31 @@ export const QrScanner = ({ onResult, onError }: Props) => {
     const scanner = new Html5Qrcode(id, false);
     scannerRef.current = scanner;
 
+    const config: any = {
+      fps: 30,
+      qrbox: (vw: number, vh: number) => {
+        const size = Math.floor(Math.min(vw, vh) * 0.8);
+        return { width: size, height: size };
+      },
+      aspectRatio: 1.7778,
+      disableFlip: false,
+      experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+      videoConstraints: {
+        facingMode: { ideal: "environment" },
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+        focusMode: "continuous",
+        advanced: [{ focusMode: "continuous" }],
+      },
+    };
+
     scanner
       .start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 250, height: 250 } },
+        { facingMode: { ideal: "environment" } } as any,
+        config,
         (decoded) => {
           const now = Date.now();
-          if (lastRef.current.text === decoded && now - lastRef.current.at < 2000) return;
+          if (lastRef.current.text === decoded && now - lastRef.current.at < 1000) return;
           lastRef.current = { text: decoded, at: now };
           onResult(decoded);
         },
