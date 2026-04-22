@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, QrCode, Trash2, Search } from "lucide-react";
+import { Plus, QrCode, Trash2, Search, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { generateQrPayload } from "@/lib/qr";
 import { QrPrintDialog } from "@/components/QrPrintDialog";
@@ -41,16 +41,16 @@ const productSchema = z.object({
   notes: z.string().max(500).optional(),
 });
 
+const emptyForm = { brand: "", model: "", category: "Mobile Phone", imei_serial: "", cost_price: "", sale_price: "", notes: "" };
+
 const Inventory = () => {
   const [products, setProducts] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [printProduct, setPrintProduct] = useState<any | null>(null);
   const [customCategory, setCustomCategory] = useState(false);
-  const [form, setForm] = useState({
-    brand: "", model: "", category: "Mobile Phone",
-    imei_serial: "", cost_price: "", sale_price: "", notes: "",
-  });
+  const [form, setForm] = useState(emptyForm);
 
   useEffect(() => { document.title = "Inventory · SGH POS"; load(); }, []);
 
@@ -61,6 +61,24 @@ const Inventory = () => {
     setProducts(data ?? []);
   };
 
+  const openAdd = () => {
+    setEditingId(null);
+    setForm(emptyForm);
+    setCustomCategory(false);
+    setOpen(true);
+  };
+
+  const openEdit = (p: any) => {
+    setEditingId(p.id);
+    setForm({
+      brand: p.brand ?? "", model: p.model ?? "", category: p.category ?? "Mobile Phone",
+      imei_serial: p.imei_serial ?? "", cost_price: String(p.cost_price ?? ""),
+      sale_price: String(p.sale_price ?? ""), notes: p.notes ?? "",
+    });
+    setCustomCategory(!CATEGORIES.includes(p.category));
+    setOpen(true);
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const parsed = productSchema.safeParse({
@@ -69,6 +87,26 @@ const Inventory = () => {
       sale_price: Number(form.sale_price),
     });
     if (!parsed.success) { toast.error(parsed.error.errors[0].message); return; }
+
+    if (editingId) {
+      const { data, error } = await supabase.from("products").update({
+        brand: parsed.data.brand,
+        model: parsed.data.model,
+        category: parsed.data.category,
+        imei_serial: parsed.data.imei_serial,
+        cost_price: parsed.data.cost_price,
+        sale_price: parsed.data.sale_price,
+        notes: parsed.data.notes,
+        qr_code: generateQrPayload(parsed.data.imei_serial),
+      }).eq("id", editingId).select().single();
+      if (error) { toast.error(error.message); return; }
+      toast.success("Product updated");
+      setOpen(false);
+      setEditingId(null);
+      setForm(emptyForm);
+      load();
+      return;
+    }
 
     const { data: { user } } = await supabase.auth.getUser();
     const { data, error } = await supabase.from("products").insert([{
@@ -86,14 +124,18 @@ const Inventory = () => {
     if (error) { toast.error(error.message); return; }
     toast.success("Product added");
     setOpen(false);
-    setForm({ brand: "", model: "", category: "Mobile Phone", imei_serial: "", cost_price: "", sale_price: "", notes: "" });
+    setForm(emptyForm);
     setPrintProduct(data);
     load();
   };
 
-  const remove = async (id: string) => {
-    if (!confirm("Delete this product?")) return;
-    const { error } = await supabase.from("products").delete().eq("id", id);
+  const remove = async (p: any) => {
+    if (p.status === "sold") {
+      toast.error("Cannot delete sold products (sales history references them).");
+      return;
+    }
+    if (!confirm(`Delete ${p.brand} ${p.model}?`)) return;
+    const { error } = await supabase.from("products").delete().eq("id", p.id);
     if (error) return toast.error(error.message);
     toast.success("Deleted");
     load();
@@ -110,12 +152,10 @@ const Inventory = () => {
           <h1 className="text-3xl font-bold">Inventory</h1>
           <p className="text-muted-foreground mt-1">Manage products and generate QR labels.</p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button><Plus className="h-4 w-4 mr-2" /> Add Product</Button>
-          </DialogTrigger>
+        <Button onClick={openAdd}><Plus className="h-4 w-4 mr-2" /> Add Product</Button>
+        <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setEditingId(null); setForm(emptyForm); } }}>
           <DialogContent className="max-w-lg">
-            <DialogHeader><DialogTitle>Stock-in New Product</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{editingId ? "Edit Product" : "Stock-in New Product"}</DialogTitle></DialogHeader>
             <form onSubmit={submit} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2"><Label>Brand</Label>
@@ -161,7 +201,7 @@ const Inventory = () => {
               </div>
               <div className="space-y-2"><Label>Notes</Label>
                 <Textarea value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} maxLength={500} /></div>
-              <Button type="submit" className="w-full">Add & Generate QR</Button>
+              <Button type="submit" className="w-full">{editingId ? "Save Changes" : "Add & Generate QR"}</Button>
             </form>
           </DialogContent>
         </Dialog>
@@ -204,8 +244,9 @@ const Inventory = () => {
                   </TableCell>
                   <TableCell className="text-right font-medium">${Number(p.sale_price).toFixed(2)}</TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" onClick={() => setPrintProduct(p)}><QrCode className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="icon" onClick={() => remove(p.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    <Button variant="ghost" size="icon" title="Print QR" onClick={() => setPrintProduct(p)}><QrCode className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon" title="Edit" onClick={() => openEdit(p)}><Pencil className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon" title="Delete" onClick={() => remove(p)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                   </TableCell>
                 </TableRow>
               ))}
