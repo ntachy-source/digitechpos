@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { FileText, Plus, Printer, Download, Eye } from "lucide-react";
+import { FileText, Plus, Printer, Download, Eye, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
@@ -88,16 +88,21 @@ const Invoices = () => {
     })));
   };
 
+  const addItem = () => setItems([...items, { brand: "", model: "", imei_serial: "", sale_price: 0 }]);
+  const updateItem = (i: number, patch: Partial<InvoiceItem>) =>
+    setItems(items.map((it, idx) => (idx === i ? { ...it, ...patch } : it)));
+  const removeItem = (i: number) => setItems(items.filter((_, idx) => idx !== i));
+
   const create = async () => {
-    if (!selectedSale) return toast.error("Pick a sale");
-    if (items.length === 0) return toast.error("No items");
+    if (items.length === 0) return toast.error("Add at least one item");
+    if (items.some(i => !i.brand && !i.model)) return toast.error("Each item needs a brand or model");
     setBusy(true);
     const { data: biz } = await supabase.from("business_settings").select("*").limit(1).maybeSingle();
     const subtotal = items.reduce((s, i) => s + Number(i.sale_price), 0);
     const total = subtotal;
     const { data: userRes } = await supabase.auth.getUser();
     const { data, error } = await supabase.from("invoices").insert({
-      sale_id: selectedSale,
+      sale_id: selectedSale || null,
       client_name: client.name || null,
       client_phone: client.phone || null,
       client_email: client.email || null,
@@ -170,9 +175,9 @@ const Invoices = () => {
           <DialogHeader><DialogTitle>New Invoice</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1">
-              <Label>Pick a sale</Label>
+              <Label>Pick a sale (optional)</Label>
               <Select value={selectedSale} onValueChange={onPickSale}>
-                <SelectTrigger><SelectValue placeholder="Choose a completed sale..." /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Or skip and add items manually below..." /></SelectTrigger>
                 <SelectContent>
                   {sales.map(s => (
                     <SelectItem key={s.id} value={s.id}>
@@ -183,20 +188,51 @@ const Invoices = () => {
               </Select>
             </div>
 
-            {items.length > 0 && (
-              <div className="border rounded-lg p-3 space-y-1 text-sm">
-                {items.map((it, i) => (
-                  <div key={i} className="flex justify-between">
-                    <span>{it.brand} {it.model} <span className="text-muted-foreground font-mono text-xs">{it.imei_serial}</span></span>
-                    <span>${Number(it.sale_price).toFixed(2)}</span>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Items</Label>
+                <Button type="button" size="sm" variant="outline" onClick={addItem}>
+                  <Plus className="h-3 w-3 mr-1" /> Add item
+                </Button>
+              </div>
+              {items.length === 0 && (
+                <p className="text-xs text-muted-foreground border rounded-lg p-3 text-center">
+                  No items yet. Pick a sale above or click "Add item" to enter products manually.
+                </p>
+              )}
+              {items.map((it, i) => (
+                <div key={i} className="grid grid-cols-12 gap-2 items-end border rounded-lg p-2">
+                  <div className="col-span-12 sm:col-span-3 space-y-1">
+                    <Label className="text-xs">Brand</Label>
+                    <Input value={it.brand} onChange={e => updateItem(i, { brand: e.target.value })} />
                   </div>
-                ))}
-                <div className="flex justify-between border-t pt-1 font-semibold">
+                  <div className="col-span-12 sm:col-span-3 space-y-1">
+                    <Label className="text-xs">Model</Label>
+                    <Input value={it.model} onChange={e => updateItem(i, { model: e.target.value })} />
+                  </div>
+                  <div className="col-span-7 sm:col-span-3 space-y-1">
+                    <Label className="text-xs">IMEI / Serial</Label>
+                    <Input value={it.imei_serial} onChange={e => updateItem(i, { imei_serial: e.target.value })} />
+                  </div>
+                  <div className="col-span-4 sm:col-span-2 space-y-1">
+                    <Label className="text-xs">Price</Label>
+                    <Input type="number" step="0.01" value={it.sale_price}
+                      onChange={e => updateItem(i, { sale_price: Number(e.target.value) })} />
+                  </div>
+                  <div className="col-span-1">
+                    <Button type="button" size="icon" variant="ghost" onClick={() => removeItem(i)}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              {items.length > 0 && (
+                <div className="flex justify-between text-sm font-semibold px-2">
                   <span>Total</span>
                   <span>${items.reduce((s, i) => s + Number(i.sale_price), 0).toFixed(2)}</span>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1"><Label>Client name</Label>
