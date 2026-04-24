@@ -14,6 +14,184 @@ export type Database = {
   }
   public: {
     Tables: {
+      business_settings: {
+        Row: {
+          address: string | null
+          business_name: string
+          email: string | null
+          id: string
+          invoice_footer: string | null
+          logo_url: string | null
+          phone: string | null
+          tax_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          business_name?: string
+          email?: string | null
+          id?: string
+          invoice_footer?: string | null
+          logo_url?: string | null
+          phone?: string | null
+          tax_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          business_name?: string
+          email?: string | null
+          id?: string
+          invoice_footer?: string | null
+          logo_url?: string | null
+          phone?: string | null
+          tax_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      invoices: {
+        Row: {
+          business_snapshot: Json | null
+          client_address: string | null
+          client_email: string | null
+          client_name: string | null
+          client_phone: string | null
+          created_at: string
+          created_by: string | null
+          discount: number
+          id: string
+          invoice_number: string
+          items: Json
+          notes: string | null
+          sale_id: string | null
+          subtotal: number
+          tax: number
+          total: number
+        }
+        Insert: {
+          business_snapshot?: Json | null
+          client_address?: string | null
+          client_email?: string | null
+          client_name?: string | null
+          client_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          discount?: number
+          id?: string
+          invoice_number?: string
+          items?: Json
+          notes?: string | null
+          sale_id?: string | null
+          subtotal?: number
+          tax?: number
+          total?: number
+        }
+        Update: {
+          business_snapshot?: Json | null
+          client_address?: string | null
+          client_email?: string | null
+          client_name?: string | null
+          client_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          discount?: number
+          id?: string
+          invoice_number?: string
+          items?: Json
+          notes?: string | null
+          sale_id?: string | null
+          subtotal?: number
+          tax?: number
+          total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      license_devices: {
+        Row: {
+          created_at: string
+          device_id: string
+          device_label: string | null
+          id: string
+          last_seen_at: string
+          license_id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_id: string
+          device_label?: string | null
+          id?: string
+          last_seen_at?: string
+          license_id: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_id?: string
+          device_label?: string | null
+          id?: string
+          last_seen_at?: string
+          license_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "license_devices_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: false
+            referencedRelation: "license_keys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      license_keys: {
+        Row: {
+          client_name: string
+          created_at: string
+          created_by: string | null
+          device_limit: number
+          expires_at: string | null
+          id: string
+          key_value: string
+          notes: string | null
+          revoked: boolean
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Insert: {
+          client_name: string
+          created_at?: string
+          created_by?: string | null
+          device_limit?: number
+          expires_at?: string | null
+          id?: string
+          key_value: string
+          notes?: string | null
+          revoked?: boolean
+          role?: Database["public"]["Enums"]["app_role"]
+        }
+        Update: {
+          client_name?: string
+          created_at?: string
+          created_by?: string | null
+          device_limit?: number
+          expires_at?: string | null
+          id?: string
+          key_value?: string
+          notes?: string | null
+          revoked?: boolean
+          role?: Database["public"]["Enums"]["app_role"]
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           brand: string
@@ -175,6 +353,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      activate_license: {
+        Args: { _device_id: string; _device_label?: string; _key: string }
+        Returns: {
+          client_name: string
+          expires_at: string
+          license_id: string
+          role: Database["public"]["Enums"]["app_role"]
+        }[]
+      }
+      generate_license_key: { Args: never; Returns: string }
       get_my_role: {
         Args: never
         Returns: Database["public"]["Enums"]["app_role"]

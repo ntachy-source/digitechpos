@@ -1,6 +1,6 @@
 import { ReactNode, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Package, ScanLine, BarChart3, LogOut, ShieldCheck, ScanBarcode, Menu } from "lucide-react";
+import { LayoutDashboard, Package, ScanLine, BarChart3, LogOut, ShieldCheck, ScanBarcode, Menu, FileText, KeyRound, Settings as SettingsIcon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -10,7 +10,10 @@ const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "staff"] as const },
   { to: "/pos", label: "Point of Sale", icon: ScanLine, roles: ["admin", "staff"] as const },
   { to: "/inventory", label: "Inventory", icon: Package, roles: ["admin"] as const },
+  { to: "/invoices", label: "Invoices", icon: FileText, roles: ["admin", "staff"] as const },
   { to: "/reports", label: "Reports", icon: BarChart3, roles: ["admin"] as const },
+  { to: "/licenses", label: "Licenses", icon: KeyRound, roles: ["admin"] as const },
+  { to: "/settings", label: "Settings", icon: SettingsIcon, roles: ["admin"] as const },
 ];
 
 export const AppLayout = ({ children }: { children: ReactNode }) => {
@@ -56,7 +59,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
         <div className="flex items-center gap-2 px-3 py-2 text-xs">
           <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="truncate font-medium">{user?.email}</p>
+            <p className="truncate font-medium">{(user?.user_metadata as any)?.client_name || "Activated device"}</p>
             <p className="text-muted-foreground capitalize">{role}</p>
           </div>
         </div>
