@@ -59,7 +59,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
         <div className="flex items-center gap-2 px-3 py-2 text-xs">
           <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="truncate font-medium">{user?.email}</p>
+            <p className="truncate font-medium">{(user?.user_metadata as any)?.client_name || "Activated device"}</p>
             <p className="text-muted-foreground capitalize">{role}</p>
           </div>
         </div>
