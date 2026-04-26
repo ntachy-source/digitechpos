@@ -5,15 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { FileText, Plus, Printer, Download, Eye, Trash2 } from "lucide-react";
+import { FileText, Plus, Printer, Download, Eye, Upload, Image as ImageIcon } from "lucide-react";
 import { format } from "date-fns";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import { getActiveLicenseId } from "@/lib/license";
 
 interface InvoiceItem { brand: string; model: string; imei_serial: string; sale_price: number; }
 interface BizSnapshot {
@@ -49,6 +49,8 @@ const Invoices = () => {
   const [open, setOpen] = useState(false);
   const [previewing, setPreviewing] = useState<Invoice | null>(null);
   const [busy, setBusy] = useState(false);
+  const [businessSettings, setBusinessSettings] = useState<(BizSnapshot & { id: string }) | null>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
 
   // form state
   const [selectedSale, setSelectedSale] = useState<string>("");
@@ -56,7 +58,7 @@ const Invoices = () => {
   const [client, setClient] = useState({ name: "", phone: "", email: "", address: "" });
   const [notes, setNotes] = useState("");
 
-  useEffect(() => { document.title = "Invoices · SGH POS"; load(); }, []);
+  useEffect(() => { document.title = "Invoices · SGH POS"; load(); loadBusinessSettings(); }, []);
 
   const load = async () => {
     const [{ data: inv }, { data: sl }] = await Promise.all([
@@ -65,6 +67,24 @@ const Invoices = () => {
     ]);
     setInvoices((inv ?? []) as unknown as Invoice[]);
     setSales((sl ?? []) as SaleOption[]);
+  };
+
+  const loadBusinessSettings = async () => {
+    try {
+      const licenseId = await getActiveLicenseId();
+      if (!licenseId) return;
+      const { data, error } = await supabase.from("business_settings").select("*").eq("license_id", licenseId).maybeSingle();
+      if (error) throw error;
+      if (data) { setBusinessSettings(data as any); return; }
+      const { data: created, error: createError } = await supabase.from("business_settings").insert({
+        business_name: "SGH Gadget Store",
+        license_id: licenseId,
+      } as any).select("*").single();
+      if (createError) throw createError;
+      setBusinessSettings(created as any);
+    } catch (err: any) {
+      toast.error(err?.message ?? "Could not load invoice settings");
+    }
   };
 
   const onPickSale = async (saleId: string) => {
