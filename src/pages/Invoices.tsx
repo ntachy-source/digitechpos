@@ -219,10 +219,24 @@ const Invoices = () => {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>New Invoice</DialogTitle></DialogHeader>
           <div className="space-y-4">
+            <div className="flex items-center gap-4 rounded-lg border p-3">
+              <div className="h-16 w-16 rounded-lg border bg-muted flex items-center justify-center overflow-hidden shrink-0">
+                {businessSettings?.logo_url ? <img src={businessSettings.logo_url} alt="Invoice logo" className="object-contain h-full w-full" />
+                  : <ImageIcon className="h-6 w-6 text-muted-foreground" />}
+              </div>
+              <div className="min-w-0">
+                <Label htmlFor="invoice-logo" className="cursor-pointer inline-flex items-center gap-2 text-sm bg-secondary px-3 py-2 rounded-md">
+                  <Upload className="h-4 w-4" /> {uploadingLogo ? "Uploading..." : "Upload invoice logo"}
+                </Label>
+                <input id="invoice-logo" type="file" accept="image/*" className="hidden" onChange={onLogo} disabled={uploadingLogo} />
+                <p className="text-xs text-muted-foreground mt-2">This logo appears on generated invoices.</p>
+              </div>
+            </div>
+
             <div className="space-y-1">
-              <Label>Pick a sale (optional)</Label>
+              <Label>Pick a sale</Label>
               <Select value={selectedSale} onValueChange={onPickSale}>
-                <SelectTrigger><SelectValue placeholder="Or skip and add items manually below..." /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Choose the sale products for this invoice..." /></SelectTrigger>
                 <SelectContent>
                   {sales.map(s => (
                     <SelectItem key={s.id} value={s.id}>
@@ -234,40 +248,18 @@ const Invoices = () => {
             </div>
 
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label>Items</Label>
-                <Button type="button" size="sm" variant="outline" onClick={addItem}>
-                  <Plus className="h-3 w-3 mr-1" /> Add item
-                </Button>
-              </div>
+              <Label>Items</Label>
               {items.length === 0 && (
                 <p className="text-xs text-muted-foreground border rounded-lg p-3 text-center">
-                  No items yet. Pick a sale above or click "Add item" to enter products manually.
+                  No items yet. Pick a completed sale above.
                 </p>
               )}
               {items.map((it, i) => (
-                <div key={i} className="grid grid-cols-12 gap-2 items-end border rounded-lg p-2">
-                  <div className="col-span-12 sm:col-span-3 space-y-1">
-                    <Label className="text-xs">Brand</Label>
-                    <Input value={it.brand} onChange={e => updateItem(i, { brand: e.target.value })} />
-                  </div>
-                  <div className="col-span-12 sm:col-span-3 space-y-1">
-                    <Label className="text-xs">Model</Label>
-                    <Input value={it.model} onChange={e => updateItem(i, { model: e.target.value })} />
-                  </div>
-                  <div className="col-span-7 sm:col-span-3 space-y-1">
-                    <Label className="text-xs">IMEI / Serial</Label>
-                    <Input value={it.imei_serial} onChange={e => updateItem(i, { imei_serial: e.target.value })} />
-                  </div>
-                  <div className="col-span-4 sm:col-span-2 space-y-1">
-                    <Label className="text-xs">Price</Label>
-                    <Input type="number" step="0.01" value={it.sale_price}
-                      onChange={e => updateItem(i, { sale_price: Number(e.target.value) })} />
-                  </div>
-                  <div className="col-span-1">
-                    <Button type="button" size="icon" variant="ghost" onClick={() => removeItem(i)}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                <div key={i} className="grid grid-cols-12 gap-2 items-center border rounded-lg p-2 text-sm">
+                  <div className="col-span-12 sm:col-span-5 font-medium">{it.brand} {it.model}</div>
+                  <div className="col-span-7 sm:col-span-4 font-mono text-xs text-muted-foreground truncate">{it.imei_serial}</div>
+                  <div className="col-span-5 sm:col-span-3 text-right font-semibold">
+                    ${Number(it.sale_price).toFixed(2)}
                   </div>
                 </div>
               ))}
