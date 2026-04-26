@@ -129,7 +129,7 @@ export type Database = {
           id: string
           last_seen_at: string
           license_id: string
-          license_owner_id: string | null
+          license_owner_id: string
           user_id: string | null
         }
         Insert: {
@@ -139,7 +139,7 @@ export type Database = {
           id?: string
           last_seen_at?: string
           license_id: string
-          license_owner_id?: string | null
+          license_owner_id: string
           user_id?: string | null
         }
         Update: {
@@ -149,7 +149,7 @@ export type Database = {
           id?: string
           last_seen_at?: string
           license_id?: string
-          license_owner_id?: string | null
+          license_owner_id?: string
           user_id?: string | null
         }
         Relationships: [
