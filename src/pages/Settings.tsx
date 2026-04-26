@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Building2, Upload, Image as ImageIcon } from "lucide-react";
+import { getActiveLicenseId } from "@/lib/license";
 
 interface Settings {
   id: string;
@@ -27,8 +28,17 @@ const Settings = () => {
   useEffect(() => { document.title = "Settings · SGH POS"; load(); }, []);
 
   const load = async () => {
-    const { data } = await supabase.from("business_settings").select("*").limit(1).maybeSingle();
-    setS(data as Settings);
+    const licenseId = await getActiveLicenseId();
+    if (!licenseId) return;
+    const { data, error } = await supabase.from("business_settings").select("*").eq("license_id", licenseId).maybeSingle();
+    if (error) return toast.error(error.message);
+    if (data) { setS(data as Settings); return; }
+    const { data: created, error: createError } = await supabase.from("business_settings").insert({
+      business_name: "SGH Gadget Store",
+      license_id: licenseId,
+    } as any).select("*").single();
+    if (createError) return toast.error(createError.message);
+    setS(created as Settings);
   };
 
   const save = async () => {
@@ -52,7 +62,9 @@ const Settings = () => {
     if (!file || !s) return;
     if (file.size > 2 * 1024 * 1024) return toast.error("Logo must be under 2MB");
     setUploading(true);
-    const path = `logo-${s.id}-${Date.now()}.${file.name.split(".").pop()}`;
+    const licenseId = await getActiveLicenseId();
+    if (!licenseId) { setUploading(false); return toast.error("No active license found"); }
+    const path = `license-${licenseId}/invoice-logo-${Date.now()}.${file.name.split(".").pop()}`;
     const { error } = await supabase.storage.from("logos").upload(path, file, { upsert: true });
     if (error) { setUploading(false); return toast.error(error.message); }
     const { data: { publicUrl } } = supabase.storage.from("logos").getPublicUrl(path);

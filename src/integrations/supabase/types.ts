@@ -21,6 +21,7 @@ export type Database = {
           email: string | null
           id: string
           invoice_footer: string | null
+          license_id: string
           logo_url: string | null
           phone: string | null
           tax_id: string | null
@@ -32,6 +33,7 @@ export type Database = {
           email?: string | null
           id?: string
           invoice_footer?: string | null
+          license_id: string
           logo_url?: string | null
           phone?: string | null
           tax_id?: string | null
@@ -43,6 +45,7 @@ export type Database = {
           email?: string | null
           id?: string
           invoice_footer?: string | null
+          license_id?: string
           logo_url?: string | null
           phone?: string | null
           tax_id?: string | null
@@ -63,6 +66,7 @@ export type Database = {
           id: string
           invoice_number: string
           items: Json
+          license_id: string
           notes: string | null
           sale_id: string | null
           subtotal: number
@@ -81,6 +85,7 @@ export type Database = {
           id?: string
           invoice_number?: string
           items?: Json
+          license_id: string
           notes?: string | null
           sale_id?: string | null
           subtotal?: number
@@ -99,6 +104,7 @@ export type Database = {
           id?: string
           invoice_number?: string
           items?: Json
+          license_id?: string
           notes?: string | null
           sale_id?: string | null
           subtotal?: number
@@ -123,6 +129,7 @@ export type Database = {
           id: string
           last_seen_at: string
           license_id: string
+          license_owner_id: string
           user_id: string | null
         }
         Insert: {
@@ -132,6 +139,7 @@ export type Database = {
           id?: string
           last_seen_at?: string
           license_id: string
+          license_owner_id: string
           user_id?: string | null
         }
         Update: {
@@ -141,6 +149,7 @@ export type Database = {
           id?: string
           last_seen_at?: string
           license_id?: string
+          license_owner_id?: string
           user_id?: string | null
         }
         Relationships: [
@@ -201,6 +210,7 @@ export type Database = {
           created_by: string | null
           id: string
           imei_serial: string
+          license_id: string
           model: string
           notes: string | null
           qr_code: string
@@ -216,6 +226,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           imei_serial: string
+          license_id: string
           model: string
           notes?: string | null
           qr_code: string
@@ -231,6 +242,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           imei_serial?: string
+          license_id?: string
           model?: string
           notes?: string | null
           qr_code?: string
@@ -306,6 +318,7 @@ export type Database = {
           customer_name: string | null
           customer_phone: string | null
           id: string
+          license_id: string
           sold_by: string | null
           total: number
         }
@@ -314,6 +327,7 @@ export type Database = {
           customer_name?: string | null
           customer_phone?: string | null
           id?: string
+          license_id: string
           sold_by?: string | null
           total?: number
         }
@@ -322,6 +336,7 @@ export type Database = {
           customer_name?: string | null
           customer_phone?: string | null
           id?: string
+          license_id?: string
           sold_by?: string | null
           total?: number
         }
@@ -362,6 +377,8 @@ export type Database = {
           role: Database["public"]["Enums"]["app_role"]
         }[]
       }
+      can_access_license: { Args: { _license_id: string }; Returns: boolean }
+      current_license_id: { Args: never; Returns: string }
       generate_license_key: { Args: never; Returns: string }
       get_my_role: {
         Args: never

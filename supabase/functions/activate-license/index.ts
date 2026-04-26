@@ -96,6 +96,7 @@ Deno.serve(async (req) => {
     // 5. Upsert device record
     if (existing) {
       await admin.from("license_devices").update({
+        license_owner_id: lic.id,
         user_id: userId,
         last_seen_at: new Date().toISOString(),
         device_label: deviceLabel ?? undefined,
@@ -103,6 +104,7 @@ Deno.serve(async (req) => {
     } else {
       await admin.from("license_devices").insert({
         license_id: lic.id,
+        license_owner_id: lic.id,
         device_id: deviceId,
         user_id: userId,
         device_label: deviceLabel,

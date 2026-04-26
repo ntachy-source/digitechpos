@@ -5,15 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { FileText, Plus, Printer, Download, Eye, Trash2 } from "lucide-react";
+import { FileText, Plus, Printer, Download, Eye, Upload, Image as ImageIcon } from "lucide-react";
 import { format } from "date-fns";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import { getActiveLicenseId } from "@/lib/license";
 
 interface InvoiceItem { brand: string; model: string; imei_serial: string; sale_price: number; }
 interface BizSnapshot {
@@ -49,6 +49,8 @@ const Invoices = () => {
   const [open, setOpen] = useState(false);
   const [previewing, setPreviewing] = useState<Invoice | null>(null);
   const [busy, setBusy] = useState(false);
+  const [businessSettings, setBusinessSettings] = useState<(BizSnapshot & { id: string }) | null>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
 
   // form state
   const [selectedSale, setSelectedSale] = useState<string>("");
@@ -56,7 +58,7 @@ const Invoices = () => {
   const [client, setClient] = useState({ name: "", phone: "", email: "", address: "" });
   const [notes, setNotes] = useState("");
 
-  useEffect(() => { document.title = "Invoices · SGH POS"; load(); }, []);
+  useEffect(() => { document.title = "Invoices · SGH POS"; load(); loadBusinessSettings(); }, []);
 
   const load = async () => {
     const [{ data: inv }, { data: sl }] = await Promise.all([
@@ -65,6 +67,24 @@ const Invoices = () => {
     ]);
     setInvoices((inv ?? []) as unknown as Invoice[]);
     setSales((sl ?? []) as SaleOption[]);
+  };
+
+  const loadBusinessSettings = async () => {
+    try {
+      const licenseId = await getActiveLicenseId();
+      if (!licenseId) return;
+      const { data, error } = await supabase.from("business_settings").select("*").eq("license_id", licenseId).maybeSingle();
+      if (error) throw error;
+      if (data) { setBusinessSettings(data as any); return; }
+      const { data: created, error: createError } = await supabase.from("business_settings").insert({
+        business_name: "SGH Gadget Store",
+        license_id: licenseId,
+      } as any).select("*").single();
+      if (createError) throw createError;
+      setBusinessSettings(created as any);
+    } catch (err: any) {
+      toast.error(err?.message ?? "Could not load invoice settings");
+    }
   };
 
   const onPickSale = async (saleId: string) => {
@@ -88,16 +108,40 @@ const Invoices = () => {
     })));
   };
 
-  const addItem = () => setItems([...items, { brand: "", model: "", imei_serial: "", sale_price: 0 }]);
-  const updateItem = (i: number, patch: Partial<InvoiceItem>) =>
-    setItems(items.map((it, idx) => (idx === i ? { ...it, ...patch } : it)));
-  const removeItem = (i: number) => setItems(items.filter((_, idx) => idx !== i));
+  const onLogo = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) return toast.error("Logo must be under 2MB");
+    setUploadingLogo(true);
+    try {
+      const licenseId = await getActiveLicenseId();
+      if (!licenseId) throw new Error("No active license found");
+      const ext = file.name.split(".").pop() || "png";
+      const path = `license-${licenseId}/invoice-logo-${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from("logos").upload(path, file, { upsert: true });
+      if (error) throw error;
+      const { data: { publicUrl } } = supabase.storage.from("logos").getPublicUrl(path);
+      const payload = { business_name: businessSettings?.business_name || "SGH Gadget Store", logo_url: publicUrl, license_id: licenseId } as any;
+      const { data, error: saveError } = businessSettings?.id
+        ? await supabase.from("business_settings").update({ logo_url: publicUrl }).eq("id", businessSettings.id).select("*").single()
+        : await supabase.from("business_settings").insert(payload).select("*").single();
+      if (saveError) throw saveError;
+      setBusinessSettings(data as any);
+      toast.success("Invoice logo updated");
+    } catch (err: any) {
+      toast.error(err?.message ?? "Could not upload logo");
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
 
   const create = async () => {
+    if (!selectedSale) return toast.error("Pick a sale before creating an invoice");
     if (items.length === 0) return toast.error("Add at least one item");
-    if (items.some(i => !i.brand && !i.model)) return toast.error("Each item needs a brand or model");
     setBusy(true);
-    const { data: biz } = await supabase.from("business_settings").select("*").limit(1).maybeSingle();
+    const licenseId = await getActiveLicenseId();
+    if (!licenseId) { setBusy(false); return toast.error("No active license found"); }
+    const biz = businessSettings;
     const subtotal = items.reduce((s, i) => s + Number(i.sale_price), 0);
     const total = subtotal;
     const { data: userRes } = await supabase.auth.getUser();
@@ -112,7 +156,8 @@ const Invoices = () => {
       items: items as any,
       business_snapshot: biz as any,
       created_by: userRes.user?.id,
-    }).select().single();
+      license_id: licenseId,
+    } as any).select().single();
     setBusy(false);
     if (error) return toast.error(error.message);
     toast.success(`Invoice ${(data as any).invoice_number} created`);
@@ -174,10 +219,24 @@ const Invoices = () => {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>New Invoice</DialogTitle></DialogHeader>
           <div className="space-y-4">
+            <div className="flex items-center gap-4 rounded-lg border p-3">
+              <div className="h-16 w-16 rounded-lg border bg-muted flex items-center justify-center overflow-hidden shrink-0">
+                {businessSettings?.logo_url ? <img src={businessSettings.logo_url} alt="Invoice logo" className="object-contain h-full w-full" />
+                  : <ImageIcon className="h-6 w-6 text-muted-foreground" />}
+              </div>
+              <div className="min-w-0">
+                <Label htmlFor="invoice-logo" className="cursor-pointer inline-flex items-center gap-2 text-sm bg-secondary px-3 py-2 rounded-md">
+                  <Upload className="h-4 w-4" /> {uploadingLogo ? "Uploading..." : "Upload invoice logo"}
+                </Label>
+                <input id="invoice-logo" type="file" accept="image/*" className="hidden" onChange={onLogo} disabled={uploadingLogo} />
+                <p className="text-xs text-muted-foreground mt-2">This logo appears on generated invoices.</p>
+              </div>
+            </div>
+
             <div className="space-y-1">
-              <Label>Pick a sale (optional)</Label>
+              <Label>Pick a sale</Label>
               <Select value={selectedSale} onValueChange={onPickSale}>
-                <SelectTrigger><SelectValue placeholder="Or skip and add items manually below..." /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Choose the sale products for this invoice..." /></SelectTrigger>
                 <SelectContent>
                   {sales.map(s => (
                     <SelectItem key={s.id} value={s.id}>
@@ -189,40 +248,18 @@ const Invoices = () => {
             </div>
 
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label>Items</Label>
-                <Button type="button" size="sm" variant="outline" onClick={addItem}>
-                  <Plus className="h-3 w-3 mr-1" /> Add item
-                </Button>
-              </div>
+              <Label>Items</Label>
               {items.length === 0 && (
                 <p className="text-xs text-muted-foreground border rounded-lg p-3 text-center">
-                  No items yet. Pick a sale above or click "Add item" to enter products manually.
+                  No items yet. Pick a completed sale above.
                 </p>
               )}
               {items.map((it, i) => (
-                <div key={i} className="grid grid-cols-12 gap-2 items-end border rounded-lg p-2">
-                  <div className="col-span-12 sm:col-span-3 space-y-1">
-                    <Label className="text-xs">Brand</Label>
-                    <Input value={it.brand} onChange={e => updateItem(i, { brand: e.target.value })} />
-                  </div>
-                  <div className="col-span-12 sm:col-span-3 space-y-1">
-                    <Label className="text-xs">Model</Label>
-                    <Input value={it.model} onChange={e => updateItem(i, { model: e.target.value })} />
-                  </div>
-                  <div className="col-span-7 sm:col-span-3 space-y-1">
-                    <Label className="text-xs">IMEI / Serial</Label>
-                    <Input value={it.imei_serial} onChange={e => updateItem(i, { imei_serial: e.target.value })} />
-                  </div>
-                  <div className="col-span-4 sm:col-span-2 space-y-1">
-                    <Label className="text-xs">Price</Label>
-                    <Input type="number" step="0.01" value={it.sale_price}
-                      onChange={e => updateItem(i, { sale_price: Number(e.target.value) })} />
-                  </div>
-                  <div className="col-span-1">
-                    <Button type="button" size="icon" variant="ghost" onClick={() => removeItem(i)}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                <div key={i} className="grid grid-cols-12 gap-2 items-center border rounded-lg p-2 text-sm">
+                  <div className="col-span-12 sm:col-span-5 font-medium">{it.brand} {it.model}</div>
+                  <div className="col-span-7 sm:col-span-4 font-mono text-xs text-muted-foreground truncate">{it.imei_serial}</div>
+                  <div className="col-span-5 sm:col-span-3 text-right font-semibold">
+                    ${Number(it.sale_price).toFixed(2)}
                   </div>
                 </div>
               ))}

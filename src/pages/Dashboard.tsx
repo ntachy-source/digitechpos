@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Package, ShoppingCart, DollarSign, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { ProductQuickAddDialog } from "@/components/ProductQuickAddDialog";
 
 interface Stats {
   inStock: number;
@@ -45,9 +46,12 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6 sm:space-y-8">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold">Dashboard</h1>
-        <p className="text-muted-foreground mt-1 text-sm sm:text-base">Welcome back. Here's a snapshot of your store.</p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold">Dashboard</h1>
+          <p className="text-muted-foreground mt-1 text-sm sm:text-base">Welcome back. Here's a snapshot of your store.</p>
+        </div>
+        <ProductQuickAddDialog onAdded={load} triggerClassName="w-full sm:w-auto" />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
