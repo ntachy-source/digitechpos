@@ -14,6 +14,7 @@ import { Plus, QrCode, Trash2, Search, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { generateQrPayload } from "@/lib/qr";
 import { QrPrintDialog } from "@/components/QrPrintDialog";
+import { getActiveLicenseId } from "@/lib/license";
 
 const CATEGORIES = [
   "Mobile Phone",
@@ -108,6 +109,8 @@ const Inventory = () => {
       return;
     }
 
+    const licenseId = await getActiveLicenseId();
+    if (!licenseId) { toast.error("No active license found"); return; }
     const { data: { user } } = await supabase.auth.getUser();
     const { data, error } = await supabase.from("products").insert([{
       brand: parsed.data.brand,
@@ -119,7 +122,8 @@ const Inventory = () => {
       notes: parsed.data.notes,
       qr_code: generateQrPayload(parsed.data.imei_serial),
       created_by: user?.id,
-    }]).select().single();
+      license_id: licenseId,
+    } as any]).select().single();
 
     if (error) { toast.error(error.message); return; }
     toast.success("Product added");
