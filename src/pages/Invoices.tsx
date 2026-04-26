@@ -108,16 +108,40 @@ const Invoices = () => {
     })));
   };
 
-  const addItem = () => setItems([...items, { brand: "", model: "", imei_serial: "", sale_price: 0 }]);
-  const updateItem = (i: number, patch: Partial<InvoiceItem>) =>
-    setItems(items.map((it, idx) => (idx === i ? { ...it, ...patch } : it)));
-  const removeItem = (i: number) => setItems(items.filter((_, idx) => idx !== i));
+  const onLogo = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) return toast.error("Logo must be under 2MB");
+    setUploadingLogo(true);
+    try {
+      const licenseId = await getActiveLicenseId();
+      if (!licenseId) throw new Error("No active license found");
+      const ext = file.name.split(".").pop() || "png";
+      const path = `license-${licenseId}/invoice-logo-${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from("logos").upload(path, file, { upsert: true });
+      if (error) throw error;
+      const { data: { publicUrl } } = supabase.storage.from("logos").getPublicUrl(path);
+      const payload = { business_name: businessSettings?.business_name || "SGH Gadget Store", logo_url: publicUrl, license_id: licenseId } as any;
+      const { data, error: saveError } = businessSettings?.id
+        ? await supabase.from("business_settings").update({ logo_url: publicUrl }).eq("id", businessSettings.id).select("*").single()
+        : await supabase.from("business_settings").insert(payload).select("*").single();
+      if (saveError) throw saveError;
+      setBusinessSettings(data as any);
+      toast.success("Invoice logo updated");
+    } catch (err: any) {
+      toast.error(err?.message ?? "Could not upload logo");
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
 
   const create = async () => {
+    if (!selectedSale) return toast.error("Pick a sale before creating an invoice");
     if (items.length === 0) return toast.error("Add at least one item");
-    if (items.some(i => !i.brand && !i.model)) return toast.error("Each item needs a brand or model");
     setBusy(true);
-    const { data: biz } = await supabase.from("business_settings").select("*").limit(1).maybeSingle();
+    const licenseId = await getActiveLicenseId();
+    if (!licenseId) { setBusy(false); return toast.error("No active license found"); }
+    const biz = businessSettings;
     const subtotal = items.reduce((s, i) => s + Number(i.sale_price), 0);
     const total = subtotal;
     const { data: userRes } = await supabase.auth.getUser();
@@ -132,7 +156,8 @@ const Invoices = () => {
       items: items as any,
       business_snapshot: biz as any,
       created_by: userRes.user?.id,
-    }).select().single();
+      license_id: licenseId,
+    } as any).select().single();
     setBusy(false);
     if (error) return toast.error(error.message);
     toast.success(`Invoice ${(data as any).invoice_number} created`);
