@@ -77,6 +77,7 @@ export const ReceiptDialog = ({ open, onOpenChange, receipt }: Props) => {
               #{receipt.saleId.slice(0, 8).toUpperCase()} · {new Date(receipt.createdAt).toLocaleString()}
             </div>
             {receipt.customerName && <div className="text-sm">Customer: <span className="font-medium">{receipt.customerName}</span></div>}
+            {receipt.customerAddress && <div className="text-xs text-muted-foreground">{receipt.customerAddress}</div>}
             <div className="border rounded-lg divide-y">
               {receipt.items.map((i, idx) => (
                 <div key={idx} className="flex justify-between p-2 text-sm">
