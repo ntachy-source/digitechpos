@@ -58,11 +58,13 @@ const POS = () => {
     const snapshotTotal = total;
     const snapshotName = customerName;
     const snapshotPhone = customerPhone;
+    const snapshotAddress = customerAddress;
     const { data, error } = await supabase.rpc("process_sale", {
       _product_ids: cart.map(c => c.id),
       _customer_name: customerName || null,
       _customer_phone: customerPhone || null,
-    });
+      _customer_address: customerAddress || null,
+    } as any);
     setBusy(false);
     if (error) return toast.error(error.message);
     toast.success(`Sale completed! Total: $${snapshotTotal.toFixed(2)}`);
@@ -71,10 +73,11 @@ const POS = () => {
       createdAt: new Date().toISOString(),
       customerName: snapshotName,
       customerPhone: snapshotPhone,
+      customerAddress: snapshotAddress,
       items: snapshotItems,
       total: snapshotTotal,
     });
-    setCart([]); setCustomerName(""); setCustomerPhone("");
+    setCart([]); setCustomerName(""); setCustomerPhone(""); setCustomerAddress("");
   };
 
   return (
