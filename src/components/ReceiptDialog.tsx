@@ -55,6 +55,7 @@ export const ReceiptDialog = ({ open, onOpenChange, receipt }: Props) => {
           <div>Date: ${date}</div>
           ${receipt.customerName ? `<div>Customer: ${receipt.customerName}</div>` : ""}
           ${receipt.customerPhone ? `<div>Phone: ${receipt.customerPhone}</div>` : ""}
+          ${receipt.customerAddress ? `<div>Address: ${receipt.customerAddress}</div>` : ""}
         </div>
         <hr/>
         <table>${itemsHtml}</table>
