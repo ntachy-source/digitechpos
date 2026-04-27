@@ -19,6 +19,7 @@ const POS = () => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
+  const [customerAddress, setCustomerAddress] = useState("");
   const [busy, setBusy] = useState(false);
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
 
