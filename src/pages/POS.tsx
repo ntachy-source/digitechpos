@@ -147,6 +147,10 @@ const POS = () => {
                 <Label className="text-xs">Phone</Label>
                 <Input value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} maxLength={32} />
               </div>
+              <div className="space-y-1 sm:col-span-2">
+                <Label className="text-xs">Address</Label>
+                <Input value={customerAddress} onChange={e => setCustomerAddress(e.target.value)} maxLength={250} placeholder="Street, city, etc." />
+              </div>
             </div>
 
             <div className="flex items-center justify-between pt-2 border-t">
