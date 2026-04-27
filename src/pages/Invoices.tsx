@@ -316,7 +316,25 @@ const InvoicePreview = ({ invoice, onClose }: { invoice: Invoice | null; onClose
 
   const downloadPdf = async () => {
     if (!ref.current) return;
-    const canvas = await html2canvas(ref.current, { scale: 2, backgroundColor: "#ffffff" });
+    // Wait for all images (especially the cross-origin logo) to fully load
+    const imgs = Array.from(ref.current.querySelectorAll("img"));
+    await Promise.all(
+      imgs.map(
+        (im) =>
+          new Promise<void>((resolve) => {
+            if (im.complete && im.naturalWidth > 0) return resolve();
+            im.onload = () => resolve();
+            im.onerror = () => resolve();
+          })
+      )
+    );
+    const canvas = await html2canvas(ref.current, {
+      scale: 2,
+      backgroundColor: "#ffffff",
+      useCORS: true,
+      allowTaint: false,
+      logging: false,
+    });
     const img = canvas.toDataURL("image/png");
     const pdf = new jsPDF({ unit: "pt", format: "a4" });
     const pw = pdf.internal.pageSize.getWidth();
