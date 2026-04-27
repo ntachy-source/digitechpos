@@ -19,6 +19,7 @@ const POS = () => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
+  const [customerAddress, setCustomerAddress] = useState("");
   const [busy, setBusy] = useState(false);
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
 
@@ -57,11 +58,13 @@ const POS = () => {
     const snapshotTotal = total;
     const snapshotName = customerName;
     const snapshotPhone = customerPhone;
+    const snapshotAddress = customerAddress;
     const { data, error } = await supabase.rpc("process_sale", {
       _product_ids: cart.map(c => c.id),
       _customer_name: customerName || null,
       _customer_phone: customerPhone || null,
-    });
+      _customer_address: customerAddress || null,
+    } as any);
     setBusy(false);
     if (error) return toast.error(error.message);
     toast.success(`Sale completed! Total: $${snapshotTotal.toFixed(2)}`);
@@ -70,10 +73,11 @@ const POS = () => {
       createdAt: new Date().toISOString(),
       customerName: snapshotName,
       customerPhone: snapshotPhone,
+      customerAddress: snapshotAddress,
       items: snapshotItems,
       total: snapshotTotal,
     });
-    setCart([]); setCustomerName(""); setCustomerPhone("");
+    setCart([]); setCustomerName(""); setCustomerPhone(""); setCustomerAddress("");
   };
 
   return (
@@ -142,6 +146,10 @@ const POS = () => {
               <div className="space-y-1">
                 <Label className="text-xs">Phone</Label>
                 <Input value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} maxLength={32} />
+              </div>
+              <div className="space-y-1 sm:col-span-2">
+                <Label className="text-xs">Address</Label>
+                <Input value={customerAddress} onChange={e => setCustomerAddress(e.target.value)} maxLength={250} placeholder="Street, city, etc." />
               </div>
             </div>
 

@@ -7,6 +7,7 @@ export interface ReceiptData {
   createdAt: string;
   customerName?: string;
   customerPhone?: string;
+  customerAddress?: string;
   items: { brand: string; model: string; imei_serial: string; sale_price: number }[];
   total: number;
 }
@@ -54,6 +55,7 @@ export const ReceiptDialog = ({ open, onOpenChange, receipt }: Props) => {
           <div>Date: ${date}</div>
           ${receipt.customerName ? `<div>Customer: ${receipt.customerName}</div>` : ""}
           ${receipt.customerPhone ? `<div>Phone: ${receipt.customerPhone}</div>` : ""}
+          ${receipt.customerAddress ? `<div>Address: ${receipt.customerAddress}</div>` : ""}
         </div>
         <hr/>
         <table>${itemsHtml}</table>
@@ -75,6 +77,7 @@ export const ReceiptDialog = ({ open, onOpenChange, receipt }: Props) => {
               #{receipt.saleId.slice(0, 8).toUpperCase()} · {new Date(receipt.createdAt).toLocaleString()}
             </div>
             {receipt.customerName && <div className="text-sm">Customer: <span className="font-medium">{receipt.customerName}</span></div>}
+            {receipt.customerAddress && <div className="text-xs text-muted-foreground">{receipt.customerAddress}</div>}
             <div className="border rounded-lg divide-y">
               {receipt.items.map((i, idx) => (
                 <div key={idx} className="flex justify-between p-2 text-sm">

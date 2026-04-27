@@ -315,6 +315,7 @@ export type Database = {
       sales: {
         Row: {
           created_at: string
+          customer_address: string | null
           customer_name: string | null
           customer_phone: string | null
           id: string
@@ -324,6 +325,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          customer_address?: string | null
           customer_name?: string | null
           customer_phone?: string | null
           id?: string
@@ -333,6 +335,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          customer_address?: string | null
           customer_name?: string | null
           customer_phone?: string | null
           id?: string
@@ -391,14 +394,24 @@ export type Database = {
         }
         Returns: boolean
       }
-      process_sale: {
-        Args: {
-          _customer_name: string
-          _customer_phone: string
-          _product_ids: string[]
-        }
-        Returns: string
-      }
+      process_sale:
+        | {
+            Args: {
+              _customer_name: string
+              _customer_phone: string
+              _product_ids: string[]
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              _customer_address?: string
+              _customer_name: string
+              _customer_phone: string
+              _product_ids: string[]
+            }
+            Returns: string
+          }
     }
     Enums: {
       app_role: "admin" | "staff"
