@@ -7,6 +7,7 @@ export interface ReceiptData {
   createdAt: string;
   customerName?: string;
   customerPhone?: string;
+  customerAddress?: string;
   items: { brand: string; model: string; imei_serial: string; sale_price: number }[];
   total: number;
 }
