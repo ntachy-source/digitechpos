@@ -1,6 +1,6 @@
 import { ReactNode, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Package, ScanLine, BarChart3, LogOut, ShieldCheck, ScanBarcode, Menu, FileText, KeyRound, Settings as SettingsIcon, Boxes } from "lucide-react";
+import { LayoutDashboard, Package, ScanLine, BarChart3, LogOut, ShieldCheck, ScanBarcode, Menu, FileText, FileSpreadsheet, KeyRound, Settings as SettingsIcon, Boxes } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -12,6 +12,7 @@ const navItems = [
   { to: "/inventory", label: "Inventory", icon: Package, roles: ["admin"] as const },
   { to: "/products", label: "Products", icon: Boxes, roles: ["staff"] as const },
   { to: "/invoices", label: "Invoices", icon: FileText, roles: ["admin", "staff"] as const },
+  { to: "/quotations", label: "Quotations", icon: FileSpreadsheet, roles: ["admin", "staff"] as const },
   { to: "/reports", label: "Reports", icon: BarChart3, roles: ["admin"] as const },
   { to: "/licenses", label: "Licenses", icon: KeyRound, roles: ["admin"] as const },
   { to: "/settings", label: "Settings", icon: SettingsIcon, roles: ["admin"] as const },

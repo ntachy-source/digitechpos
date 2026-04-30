@@ -273,6 +273,72 @@ export type Database = {
         }
         Relationships: []
       }
+      quotations: {
+        Row: {
+          business_snapshot: Json | null
+          client_address: string | null
+          client_email: string | null
+          client_name: string | null
+          client_phone: string | null
+          created_at: string
+          created_by: string | null
+          discount: number
+          id: string
+          items: Json
+          license_id: string
+          notes: string | null
+          quote_number: string
+          status: string
+          subtotal: number
+          tax: number
+          total: number
+          updated_at: string
+          valid_until: string | null
+        }
+        Insert: {
+          business_snapshot?: Json | null
+          client_address?: string | null
+          client_email?: string | null
+          client_name?: string | null
+          client_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          discount?: number
+          id?: string
+          items?: Json
+          license_id: string
+          notes?: string | null
+          quote_number?: string
+          status?: string
+          subtotal?: number
+          tax?: number
+          total?: number
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Update: {
+          business_snapshot?: Json | null
+          client_address?: string | null
+          client_email?: string | null
+          client_name?: string | null
+          client_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          discount?: number
+          id?: string
+          items?: Json
+          license_id?: string
+          notes?: string | null
+          quote_number?: string
+          status?: string
+          subtotal?: number
+          tax?: number
+          total?: number
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Relationships: []
+      }
       sale_items: {
         Row: {
           created_at: string
