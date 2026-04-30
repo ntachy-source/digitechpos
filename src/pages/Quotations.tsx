@@ -1,0 +1,395 @@
+import { useEffect, useRef, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { AppLayout } from "@/components/AppLayout";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
+import { FileSpreadsheet, Plus, Printer, Download, Eye, Trash2 } from "lucide-react";
+import { format } from "date-fns";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
+import { getActiveLicenseId } from "@/lib/license";
+
+interface QuoteItem { description: string; quantity: number; unit_price: number; }
+interface BizSnapshot {
+  business_name: string; address?: string | null; phone?: string | null;
+  email?: string | null; tax_id?: string | null; logo_url?: string | null; invoice_footer?: string | null;
+}
+interface Quotation {
+  id: string;
+  quote_number: string;
+  client_name: string | null;
+  client_phone: string | null;
+  client_email: string | null;
+  client_address: string | null;
+  notes: string | null;
+  subtotal: number;
+  total: number;
+  discount: number;
+  tax: number;
+  status: string;
+  valid_until: string | null;
+  items: QuoteItem[];
+  business_snapshot: BizSnapshot | null;
+  created_at: string;
+}
+
+const STATUS_COLORS: Record<string, string> = {
+  draft: "bg-muted text-muted-foreground",
+  sent: "bg-blue-500/15 text-blue-700 dark:text-blue-400",
+  accepted: "bg-green-500/15 text-green-700 dark:text-green-400",
+  declined: "bg-destructive/15 text-destructive",
+  expired: "bg-orange-500/15 text-orange-700 dark:text-orange-400",
+};
+
+const Quotations = () => {
+  const [quotes, setQuotes] = useState<Quotation[]>([]);
+  const [open, setOpen] = useState(false);
+  const [previewing, setPreviewing] = useState<Quotation | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [biz, setBiz] = useState<BizSnapshot | null>(null);
+
+  const [client, setClient] = useState({ name: "", phone: "", email: "", address: "" });
+  const [items, setItems] = useState<QuoteItem[]>([{ description: "", quantity: 1, unit_price: 0 }]);
+  const [notes, setNotes] = useState("");
+  const [discount, setDiscount] = useState(0);
+  const [tax, setTax] = useState(0);
+  const [validUntil, setValidUntil] = useState("");
+
+  useEffect(() => {
+    document.title = "Quotations · SGH POS";
+    load();
+    loadBiz();
+  }, []);
+
+  const load = async () => {
+    const { data, error } = await supabase.from("quotations" as any).select("*").order("created_at", { ascending: false });
+    if (error) return toast.error(error.message);
+    setQuotes((data ?? []) as unknown as Quotation[]);
+  };
+
+  const loadBiz = async () => {
+    const licenseId = await getActiveLicenseId();
+    if (!licenseId) return;
+    const { data } = await supabase.from("business_settings").select("*").eq("license_id", licenseId).maybeSingle();
+    if (data) setBiz(data as any);
+  };
+
+  const subtotal = items.reduce((s, i) => s + Number(i.quantity || 0) * Number(i.unit_price || 0), 0);
+  const total = Math.max(0, subtotal - Number(discount || 0) + Number(tax || 0));
+
+  const updateItem = (i: number, patch: Partial<QuoteItem>) =>
+    setItems(items.map((it, idx) => (idx === i ? { ...it, ...patch } : it)));
+
+  const addItem = () => setItems([...items, { description: "", quantity: 1, unit_price: 0 }]);
+  const removeItem = (i: number) => setItems(items.filter((_, idx) => idx !== i));
+
+  const reset = () => {
+    setClient({ name: "", phone: "", email: "", address: "" });
+    setItems([{ description: "", quantity: 1, unit_price: 0 }]);
+    setNotes(""); setDiscount(0); setTax(0); setValidUntil("");
+  };
+
+  const create = async () => {
+    if (!client.name.trim()) return toast.error("Client name is required");
+    const valid = items.filter(i => i.description.trim());
+    if (valid.length === 0) return toast.error("Add at least one item with a description");
+    setBusy(true);
+    const licenseId = await getActiveLicenseId();
+    if (!licenseId) { setBusy(false); return toast.error("No active license"); }
+    const { data: userRes } = await supabase.auth.getUser();
+    const { data, error } = await supabase.from("quotations" as any).insert({
+      client_name: client.name || null,
+      client_phone: client.phone || null,
+      client_email: client.email || null,
+      client_address: client.address || null,
+      notes: notes || null,
+      items: valid as any,
+      subtotal, discount, tax, total,
+      valid_until: validUntil || null,
+      business_snapshot: biz as any,
+      license_id: licenseId,
+      created_by: userRes.user?.id,
+    } as any).select().single();
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success(`Quotation ${(data as any).quote_number} created`);
+    setOpen(false);
+    reset();
+    load();
+    setPreviewing(data as unknown as Quotation);
+  };
+
+  const setStatus = async (q: Quotation, status: string) => {
+    const { error } = await supabase.from("quotations" as any).update({ status }).eq("id", q.id);
+    if (error) return toast.error(error.message);
+    toast.success(`Marked as ${status}`);
+    load();
+  };
+
+  return (
+    <AppLayout>
+      <div className="space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
+              <FileSpreadsheet className="h-7 w-7 text-primary" /> Quotations
+            </h1>
+            <p className="text-muted-foreground mt-1 text-sm">Create and send price quotes to your clients.</p>
+          </div>
+          <Button onClick={() => setOpen(true)}><Plus className="h-4 w-4 mr-2" /> New Quotation</Button>
+        </div>
+
+        <Card>
+          <CardHeader><CardTitle>All quotations ({quotes.length})</CardTitle></CardHeader>
+          <CardContent className="overflow-x-auto p-0 sm:p-6">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Quote #</TableHead>
+                  <TableHead>Client</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Valid until</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {quotes.map(q => (
+                  <TableRow key={q.id}>
+                    <TableCell className="font-mono text-xs">{q.quote_number}</TableCell>
+                    <TableCell>{q.client_name || <span className="text-muted-foreground">—</span>}</TableCell>
+                    <TableCell className="text-xs">{format(new Date(q.created_at), "PP")}</TableCell>
+                    <TableCell className="text-xs">{q.valid_until ? format(new Date(q.valid_until), "PP") : "—"}</TableCell>
+                    <TableCell>
+                      <Badge variant="secondary" className={STATUS_COLORS[q.status] ?? ""}>{q.status}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-semibold">${Number(q.total).toFixed(2)}</TableCell>
+                    <TableCell className="text-right">
+                      <Button size="sm" variant="ghost" onClick={() => setPreviewing(q)}>
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {quotes.length === 0 && (
+                  <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No quotations yet</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        {/* Editor */}
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader><DialogTitle>New Quotation</DialogTitle></DialogHeader>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1"><Label>Client name *</Label>
+                  <Input value={client.name} onChange={e => setClient({ ...client, name: e.target.value })} /></div>
+                <div className="space-y-1"><Label>Phone</Label>
+                  <Input value={client.phone} onChange={e => setClient({ ...client, phone: e.target.value })} /></div>
+                <div className="space-y-1"><Label>Email</Label>
+                  <Input type="email" value={client.email} onChange={e => setClient({ ...client, email: e.target.value })} /></div>
+                <div className="space-y-1"><Label>Address</Label>
+                  <Input value={client.address} onChange={e => setClient({ ...client, address: e.target.value })} /></div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Items</Label>
+                  <Button type="button" size="sm" variant="outline" onClick={addItem}>
+                    <Plus className="h-4 w-4 mr-1" /> Add line
+                  </Button>
+                </div>
+                {items.map((it, i) => (
+                  <div key={i} className="grid grid-cols-12 gap-2 items-center">
+                    <Input className="col-span-12 sm:col-span-6" placeholder="Description (e.g. iPhone 14 128GB)"
+                      value={it.description} onChange={e => updateItem(i, { description: e.target.value })} />
+                    <Input className="col-span-4 sm:col-span-2" type="number" min={1} placeholder="Qty"
+                      value={it.quantity} onChange={e => updateItem(i, { quantity: Number(e.target.value) })} />
+                    <Input className="col-span-6 sm:col-span-3" type="number" min={0} step="0.01" placeholder="Unit price"
+                      value={it.unit_price} onChange={e => updateItem(i, { unit_price: Number(e.target.value) })} />
+                    <Button type="button" size="icon" variant="ghost" className="col-span-2 sm:col-span-1"
+                      onClick={() => removeItem(i)} disabled={items.length === 1}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="space-y-1"><Label>Discount</Label>
+                  <Input type="number" min={0} step="0.01" value={discount} onChange={e => setDiscount(Number(e.target.value))} /></div>
+                <div className="space-y-1"><Label>Tax</Label>
+                  <Input type="number" min={0} step="0.01" value={tax} onChange={e => setTax(Number(e.target.value))} /></div>
+                <div className="space-y-1"><Label>Valid until</Label>
+                  <Input type="date" value={validUntil} onChange={e => setValidUntil(e.target.value)} /></div>
+              </div>
+
+              <div className="rounded-lg border p-3 space-y-1 text-sm">
+                <div className="flex justify-between"><span>Subtotal</span><span>${subtotal.toFixed(2)}</span></div>
+                <div className="flex justify-between text-muted-foreground"><span>Discount</span><span>−${Number(discount).toFixed(2)}</span></div>
+                <div className="flex justify-between text-muted-foreground"><span>Tax</span><span>+${Number(tax).toFixed(2)}</span></div>
+                <div className="flex justify-between font-bold border-t pt-2"><span>Total</span><span>${total.toFixed(2)}</span></div>
+              </div>
+
+              <div className="space-y-1">
+                <Label>Notes</Label>
+                <Textarea rows={3} value={notes} onChange={e => setNotes(e.target.value)} placeholder="Terms, delivery time, payment instructions..." />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button onClick={create} disabled={busy}>{busy ? "Creating..." : "Create Quotation"}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <QuotePreview quote={previewing} onClose={() => setPreviewing(null)} onStatus={setStatus} />
+      </div>
+    </AppLayout>
+  );
+};
+
+const QuotePreview = ({ quote, onClose, onStatus }: {
+  quote: Quotation | null; onClose: () => void; onStatus: (q: Quotation, s: string) => void;
+}) => {
+  const ref = useRef<HTMLDivElement>(null);
+  if (!quote) return null;
+  const biz = quote.business_snapshot ?? { business_name: "Business" } as BizSnapshot;
+
+  const print = () => {
+    const html = ref.current?.outerHTML;
+    if (!html) return;
+    const w = window.open("", "_blank");
+    if (!w) return;
+    w.document.write(`<!DOCTYPE html><html><head><title>${quote.quote_number}</title>
+      <script src="https://cdn.tailwindcss.com"><\/script></head><body>${html}</body></html>`);
+    w.document.close();
+    setTimeout(() => { w.print(); w.close(); }, 400);
+  };
+
+  const downloadPdf = async () => {
+    if (!ref.current) return;
+    const imgs = Array.from(ref.current.querySelectorAll("img"));
+    await Promise.all(imgs.map(im => new Promise<void>(resolve => {
+      if (im.complete && im.naturalWidth > 0) return resolve();
+      im.onload = () => resolve(); im.onerror = () => resolve();
+    })));
+    const canvas = await html2canvas(ref.current, { scale: 2, backgroundColor: "#ffffff", useCORS: true, logging: false });
+    const img = canvas.toDataURL("image/png");
+    const pdf = new jsPDF({ unit: "pt", format: "a4" });
+    const pw = pdf.internal.pageSize.getWidth();
+    const ph = (canvas.height * pw) / canvas.width;
+    pdf.addImage(img, "PNG", 0, 0, pw, ph);
+    pdf.save(`${quote.quote_number}.pdf`);
+  };
+
+  return (
+    <Dialog open={!!quote} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex flex-wrap items-center justify-between gap-2 pr-8">
+            <span>Quotation {quote.quote_number}</span>
+            <div className="flex flex-wrap gap-2">
+              <Select value={quote.status} onValueChange={(v) => onStatus(quote, v)}>
+                <SelectTrigger className="h-9 w-32"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="draft">Draft</SelectItem>
+                  <SelectItem value="sent">Sent</SelectItem>
+                  <SelectItem value="accepted">Accepted</SelectItem>
+                  <SelectItem value="declined">Declined</SelectItem>
+                  <SelectItem value="expired">Expired</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button size="sm" variant="outline" onClick={print}><Printer className="h-4 w-4 mr-2" />Print</Button>
+              <Button size="sm" onClick={downloadPdf}><Download className="h-4 w-4 mr-2" />PDF</Button>
+            </div>
+          </DialogTitle>
+        </DialogHeader>
+
+        <div ref={ref} className="bg-white text-slate-900 p-8 rounded border" style={{ minHeight: 600 }}>
+          <div className="flex items-start justify-between gap-6 border-b pb-4">
+            <div className="flex items-center gap-3">
+              {biz.logo_url && <img src={biz.logo_url} alt="" crossOrigin="anonymous" className="h-16 w-16 object-contain" />}
+              <div>
+                <h2 className="text-xl font-bold">{biz.business_name}</h2>
+                {biz.address && <p className="text-xs whitespace-pre-line">{biz.address}</p>}
+                <p className="text-xs">
+                  {[biz.phone, biz.email].filter(Boolean).join(" · ")}
+                  {biz.tax_id && <> · Tax ID: {biz.tax_id}</>}
+                </p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-2xl font-bold tracking-tight">QUOTATION</p>
+              <p className="text-xs font-mono">{quote.quote_number}</p>
+              <p className="text-xs">{format(new Date(quote.created_at), "PPP")}</p>
+              {quote.valid_until && <p className="text-xs">Valid until: {format(new Date(quote.valid_until), "PPP")}</p>}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-6 mt-4">
+            <div>
+              <p className="text-xs uppercase text-slate-500 mb-1">Quote for</p>
+              <p className="font-semibold">{quote.client_name || "—"}</p>
+              {quote.client_address && <p className="text-xs whitespace-pre-line">{quote.client_address}</p>}
+              {quote.client_phone && <p className="text-xs">{quote.client_phone}</p>}
+              {quote.client_email && <p className="text-xs">{quote.client_email}</p>}
+            </div>
+          </div>
+
+          <table className="w-full mt-6 text-sm">
+            <thead>
+              <tr className="border-b border-slate-300 text-left text-xs uppercase text-slate-500">
+                <th className="py-2">Description</th>
+                <th className="text-right">Qty</th>
+                <th className="text-right">Unit</th>
+                <th className="text-right">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {quote.items.map((it, i) => (
+                <tr key={i} className="border-b border-slate-100">
+                  <td className="py-2">{it.description}</td>
+                  <td className="text-right">{it.quantity}</td>
+                  <td className="text-right">${Number(it.unit_price).toFixed(2)}</td>
+                  <td className="text-right">${(Number(it.quantity) * Number(it.unit_price)).toFixed(2)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <div className="flex justify-end mt-4">
+            <div className="w-64 space-y-1 text-sm">
+              <div className="flex justify-between"><span>Subtotal</span><span>${Number(quote.subtotal).toFixed(2)}</span></div>
+              {Number(quote.discount) > 0 && <div className="flex justify-between"><span>Discount</span><span>−${Number(quote.discount).toFixed(2)}</span></div>}
+              {Number(quote.tax) > 0 && <div className="flex justify-between"><span>Tax</span><span>+${Number(quote.tax).toFixed(2)}</span></div>}
+              <div className="flex justify-between border-t pt-2 font-bold text-base">
+                <span>Total</span><span>${Number(quote.total).toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+
+          {(quote.notes || biz.invoice_footer) && (
+            <div className="mt-8 pt-4 border-t text-xs text-slate-600 whitespace-pre-line">
+              {quote.notes && <p className="mb-2"><strong>Notes:</strong> {quote.notes}</p>}
+              {biz.invoice_footer}
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default Quotations;
