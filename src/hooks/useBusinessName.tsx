@@ -25,7 +25,7 @@ export const useBusinessName = () => {
   useEffect(() => {
     load();
     const channel = supabase
-      .channel("business_settings_branding")
+      .channel(`business_settings_branding_${Math.random().toString(36).slice(2)}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "business_settings" }, () => load())
       .subscribe();
     return () => {
