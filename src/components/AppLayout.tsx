@@ -2,6 +2,7 @@ import { ReactNode, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { LayoutDashboard, Package, ScanLine, BarChart3, LogOut, ShieldCheck, ScanBarcode, Menu, FileText, FileSpreadsheet, KeyRound, Settings as SettingsIcon, Boxes } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useBusinessName } from "@/hooks/useBusinessName";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
@@ -20,6 +21,7 @@ const navItems = [
 
 export const AppLayout = ({ children }: { children: ReactNode }) => {
   const { user, role, signOut } = useAuth();
+  const { name: bizName, tagline: bizTagline } = useBusinessName();
   const navigate = useNavigate();
   const [openMobile, setOpenMobile] = useState(false);
 
@@ -34,9 +36,9 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
         <div className="h-9 w-9 rounded-lg bg-gradient-primary flex items-center justify-center">
           <ScanBarcode className="h-5 w-5 text-primary-foreground" />
         </div>
-        <div>
-          <p className="font-semibold tracking-tight">SGH POS</p>
-          <p className="text-xs text-muted-foreground">Gadget Store</p>
+        <div className="min-w-0">
+          <p className="font-semibold tracking-tight truncate">{bizName}</p>
+          <p className="text-xs text-muted-foreground truncate">{bizTagline}</p>
         </div>
       </div>
       <nav className="flex-1 p-3 space-y-1 overflow-auto">
@@ -86,7 +88,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
             <div className="h-8 w-8 rounded-lg bg-gradient-primary flex items-center justify-center">
               <ScanBarcode className="h-4 w-4 text-primary-foreground" />
             </div>
-            <p className="font-semibold tracking-tight">SGH POS</p>
+            <p className="font-semibold tracking-tight truncate max-w-[180px]">{bizName}</p>
           </div>
           <Sheet open={openMobile} onOpenChange={setOpenMobile}>
             <SheetTrigger asChild>
