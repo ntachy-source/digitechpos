@@ -55,6 +55,7 @@ export const ProductQuickAddDialog = ({ onAdded, triggerClassName }: ProductQuic
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const qty = Math.max(1, Math.min(100, parseInt(form.quantity) || 1));
     const parsed = productSchema.safeParse({
       ...form,
       cost_price: Number(form.cost_price),
@@ -70,24 +71,30 @@ export const ProductQuickAddDialog = ({ onAdded, triggerClassName }: ProductQuic
       const licenseId = await getActiveLicenseId();
       if (!licenseId) throw new Error("No active license found");
       const { data: { user } } = await supabase.auth.getUser();
-      const { data, error } = await supabase.from("products").insert({
-        brand: parsed.data.brand,
-        model: parsed.data.model,
-        category: parsed.data.category,
-        imei_serial: parsed.data.imei_serial,
-        cost_price: parsed.data.cost_price,
-        sale_price: parsed.data.sale_price,
-        notes: parsed.data.notes,
-        qr_code: generateQrPayload(parsed.data.imei_serial),
-        created_by: user?.id,
-        license_id: licenseId,
-      } as any).select().single();
+
+      const rows = Array.from({ length: qty }, (_, i) => {
+        const serial = qty === 1 ? parsed.data.imei_serial : `${parsed.data.imei_serial}-${String(i + 1).padStart(3, "0")}`;
+        return {
+          brand: parsed.data.brand,
+          model: parsed.data.model,
+          category: parsed.data.category,
+          imei_serial: serial,
+          cost_price: parsed.data.cost_price,
+          sale_price: parsed.data.sale_price,
+          notes: parsed.data.notes,
+          qr_code: generateQrPayload(serial),
+          created_by: user?.id,
+          license_id: licenseId,
+        } as any;
+      });
+
+      const { data, error } = await supabase.from("products").insert(rows).select();
       if (error) throw error;
-      toast.success("Product added");
+      toast.success(`${qty} product${qty > 1 ? "s" : ""} added`);
       setOpen(false);
       setForm(emptyForm);
       setCustomCategory(false);
-      setPrintProduct(data);
+      if (data && data.length === 1) setPrintProduct(data[0]);
       onAdded?.();
     } catch (err: any) {
       toast.error(err?.message ?? "Could not add product");
