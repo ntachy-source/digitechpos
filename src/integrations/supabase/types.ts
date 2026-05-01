@@ -214,6 +214,7 @@ export type Database = {
           model: string
           notes: string | null
           qr_code: string
+          quantity: number
           sale_price: number
           status: Database["public"]["Enums"]["product_status"]
           updated_at: string
@@ -230,6 +231,7 @@ export type Database = {
           model: string
           notes?: string | null
           qr_code: string
+          quantity?: number
           sale_price?: number
           status?: Database["public"]["Enums"]["product_status"]
           updated_at?: string
@@ -246,6 +248,7 @@ export type Database = {
           model?: string
           notes?: string | null
           qr_code?: string
+          quantity?: number
           sale_price?: number
           status?: Database["public"]["Enums"]["product_status"]
           updated_at?: string
