@@ -39,7 +39,7 @@ const productSchema = z.object({
   notes: z.string().max(500).optional(),
 });
 
-const emptyForm = { brand: "", model: "", category: "Mobile Phone", imei_serial: "", cost_price: "", sale_price: "", notes: "" };
+const emptyForm = { brand: "", model: "", category: "Mobile Phone", imei_serial: "", cost_price: "", sale_price: "", notes: "", quantity: "1" };
 
 interface ProductQuickAddDialogProps {
   onAdded?: () => void;
