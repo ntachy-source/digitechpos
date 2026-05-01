@@ -39,6 +39,7 @@ export const ProductEditDialog = ({ open, onOpenChange, product, onSaved }: Prod
       imei_serial: form.imei_serial,
       cost_price: Number(form.cost_price) || 0,
       sale_price: Number(form.sale_price) || 0,
+      quantity: Number(form.quantity) || 1,
       notes: form.notes || null,
     }).eq("id", form.id);
     setBusy(false);
