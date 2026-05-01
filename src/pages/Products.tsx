@@ -5,14 +5,16 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { QrCode, Search } from "lucide-react";
+import { QrCode, Search, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { QrPrintDialog } from "@/components/QrPrintDialog";
+import { ProductEditDialog } from "@/components/ProductEditDialog";
 
 const Products = () => {
   const [products, setProducts] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [printProduct, setPrintProduct] = useState<any | null>(null);
+  const [editProduct, setEditProduct] = useState<any | null>(null);
 
   useEffect(() => {
     document.title = "Products · SGH POS";
@@ -63,9 +65,14 @@ const Products = () => {
                 </div>
                 <div className="flex items-center justify-between pt-1">
                   <span className="font-semibold">${Number(p.sale_price).toFixed(2)}</span>
-                  <Button variant="outline" size="sm" onClick={() => setPrintProduct(p)}>
-                    <QrCode className="h-4 w-4 mr-2" /> View QR
-                  </Button>
+                  <div className="flex gap-1">
+                    <Button variant="outline" size="sm" onClick={() => setEditProduct(p)}>
+                      <Pencil className="h-4 w-4 mr-1" /> Edit
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setPrintProduct(p)}>
+                      <QrCode className="h-4 w-4 mr-1" /> QR
+                    </Button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -80,7 +87,7 @@ const Products = () => {
                   <TableHead>IMEI / Serial</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Price</TableHead>
-                  <TableHead className="text-right">QR</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -102,9 +109,14 @@ const Products = () => {
                     </TableCell>
                     <TableCell className="text-right font-medium">${Number(p.sale_price).toFixed(2)}</TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" title="View QR" onClick={() => setPrintProduct(p)}>
-                        <QrCode className="h-4 w-4" />
-                      </Button>
+                      <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="icon" title="Edit" onClick={() => setEditProduct(p)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" title="View QR" onClick={() => setPrintProduct(p)}>
+                          <QrCode className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -115,6 +127,7 @@ const Products = () => {
       </Card>
 
       <QrPrintDialog open={!!printProduct} onOpenChange={o => !o && setPrintProduct(null)} product={printProduct} />
+      <ProductEditDialog open={!!editProduct} onOpenChange={o => !o && setEditProduct(null)} product={editProduct} onSaved={load} />
     </div>
   );
 };
