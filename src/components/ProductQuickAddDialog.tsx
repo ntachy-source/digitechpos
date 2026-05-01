@@ -154,9 +154,17 @@ export const ProductQuickAddDialog = ({ onAdded, triggerClassName }: ProductQuic
               <div className="space-y-2"><Label>Sale Price</Label>
                 <Input type="number" step="0.01" value={form.sale_price} onChange={e => setForm({ ...form, sale_price: e.target.value })} required /></div>
             </div>
-            <div className="space-y-2"><Label>Notes</Label>
-              <Textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} maxLength={500} /></div>
-            <Button type="submit" className="w-full" disabled={busy}>{busy ? "Adding..." : "Add & Generate QR"}</Button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-2"><Label>Quantity</Label>
+                <Input type="number" min="1" max="100" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} required />
+                {parseInt(form.quantity) > 1 && (
+                  <p className="text-xs text-muted-foreground">Serial numbers will be auto-suffixed (-001, -002, …)</p>
+                )}
+              </div>
+              <div className="space-y-2"><Label>Notes</Label>
+                <Textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} maxLength={500} /></div>
+            </div>
+            <Button type="submit" className="w-full" disabled={busy}>{busy ? "Adding..." : `Add ${parseInt(form.quantity) > 1 ? parseInt(form.quantity) + " Products" : "& Generate QR"}`}</Button>
           </form>
         </DialogContent>
       </Dialog>
