@@ -28,6 +28,14 @@ const Products = () => {
     setProducts(data ?? []);
   };
 
+  const deleteProduct = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this product?")) return;
+    const { error } = await supabase.from("products").delete().eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Product deleted");
+    load();
+  };
+
   const filtered = products.filter(p =>
     [p.brand, p.model, p.imei_serial].some(v => v?.toLowerCase().includes(search.toLowerCase()))
   );
