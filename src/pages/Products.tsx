@@ -127,6 +127,9 @@ const Products = () => {
                         <Button variant="ghost" size="icon" title="View QR" onClick={() => setPrintProduct(p)}>
                           <QrCode className="h-4 w-4" />
                         </Button>
+                        <Button variant="ghost" size="icon" title="Delete" onClick={() => deleteProduct(p.id)} className="text-destructive hover:text-destructive">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
