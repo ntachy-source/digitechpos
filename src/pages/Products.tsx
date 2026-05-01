@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { QrCode, Search, Pencil } from "lucide-react";
+import { QrCode, Search, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { QrPrintDialog } from "@/components/QrPrintDialog";
 import { ProductEditDialog } from "@/components/ProductEditDialog";
