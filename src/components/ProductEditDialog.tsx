@@ -74,7 +74,7 @@ export const ProductEditDialog = ({ open, onOpenChange, product, onSaved }: Prod
             <Label>IMEI / Serial</Label>
             <Input value={p.imei_serial ?? ""} onChange={e => set("imei_serial", e.target.value)} />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div className="space-y-1">
               <Label>Cost Price</Label>
               <Input type="number" value={p.cost_price ?? 0} onChange={e => set("cost_price", e.target.value)} />
@@ -82,6 +82,10 @@ export const ProductEditDialog = ({ open, onOpenChange, product, onSaved }: Prod
             <div className="space-y-1">
               <Label>Sale Price</Label>
               <Input type="number" value={p.sale_price ?? 0} onChange={e => set("sale_price", e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label>Quantity</Label>
+              <Input type="number" min={1} value={p.quantity ?? 1} onChange={e => set("quantity", e.target.value)} />
             </div>
           </div>
           <div className="space-y-1">
