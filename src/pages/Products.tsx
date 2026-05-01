@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { QrCode, Search, Pencil } from "lucide-react";
+import { QrCode, Search, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { QrPrintDialog } from "@/components/QrPrintDialog";
 import { ProductEditDialog } from "@/components/ProductEditDialog";
@@ -26,6 +26,14 @@ const Products = () => {
       .from("products").select("*").order("created_at", { ascending: false });
     if (error) toast.error(error.message);
     setProducts(data ?? []);
+  };
+
+  const deleteProduct = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this product?")) return;
+    const { error } = await supabase.from("products").delete().eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Product deleted");
+    load();
   };
 
   const filtered = products.filter(p =>
@@ -72,6 +80,9 @@ const Products = () => {
                     <Button variant="outline" size="sm" onClick={() => setPrintProduct(p)}>
                       <QrCode className="h-4 w-4 mr-1" /> QR
                     </Button>
+                    <Button variant="destructive" size="sm" onClick={() => deleteProduct(p.id)}>
+                      <Trash2 className="h-4 w-4 mr-1" /> Delete
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -115,6 +126,9 @@ const Products = () => {
                         </Button>
                         <Button variant="ghost" size="icon" title="View QR" onClick={() => setPrintProduct(p)}>
                           <QrCode className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" title="Delete" onClick={() => deleteProduct(p.id)} className="text-destructive hover:text-destructive">
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </TableCell>
