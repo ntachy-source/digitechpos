@@ -121,10 +121,11 @@ const Quotations = () => {
     setBusy(false);
     if (error) return toast.error(error.message);
     toast.success(`Quotation ${(data as any).quote_number} created`);
-    setOpen(false);
     reset();
+    setOpen(false);
     load();
-    setPreviewing(data as unknown as Quotation);
+    // Wait for editor dialog to fully close before opening the preview
+    setTimeout(() => setPreviewing(data as unknown as Quotation), 250);
   };
 
   const setStatus = async (q: Quotation, status: string) => {
