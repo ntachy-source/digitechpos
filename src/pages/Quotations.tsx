@@ -121,10 +121,11 @@ const Quotations = () => {
     setBusy(false);
     if (error) return toast.error(error.message);
     toast.success(`Quotation ${(data as any).quote_number} created`);
-    setOpen(false);
     reset();
+    setOpen(false);
     load();
-    setPreviewing(data as unknown as Quotation);
+    // Wait for editor dialog to fully close before opening the preview
+    setTimeout(() => setPreviewing(data as unknown as Quotation), 250);
   };
 
   const setStatus = async (q: Quotation, status: string) => {
@@ -296,96 +297,139 @@ const QuotePreview = ({ quote, onClose, onStatus }: {
 
   return (
     <Dialog open={!!quote} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex flex-wrap items-center justify-between gap-2 pr-8">
-            <span>Quotation {quote.quote_number}</span>
-            <div className="flex flex-wrap gap-2">
-              <Select value={quote.status} onValueChange={(v) => onStatus(quote, v)}>
-                <SelectTrigger className="h-9 w-32"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="draft">Draft</SelectItem>
-                  <SelectItem value="sent">Sent</SelectItem>
-                  <SelectItem value="accepted">Accepted</SelectItem>
-                  <SelectItem value="declined">Declined</SelectItem>
-                  <SelectItem value="expired">Expired</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button size="sm" variant="outline" onClick={print}><Printer className="h-4 w-4 mr-2" />Print</Button>
-              <Button size="sm" onClick={downloadPdf}><Download className="h-4 w-4 mr-2" />PDF</Button>
-            </div>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0">
+        <DialogHeader className="px-6 pt-6 pb-3 border-b">
+          <DialogTitle className="text-base font-semibold">
+            Quotation {quote.quote_number}
           </DialogTitle>
+          <div className="flex flex-wrap items-center gap-2 pt-2">
+            <Select value={quote.status} onValueChange={(v) => onStatus(quote, v)}>
+              <SelectTrigger className="h-9 w-32"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="draft">Draft</SelectItem>
+                <SelectItem value="sent">Sent</SelectItem>
+                <SelectItem value="accepted">Accepted</SelectItem>
+                <SelectItem value="declined">Declined</SelectItem>
+                <SelectItem value="expired">Expired</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button size="sm" variant="outline" onClick={print}><Printer className="h-4 w-4 mr-2" />Print</Button>
+            <Button size="sm" onClick={downloadPdf}><Download className="h-4 w-4 mr-2" />PDF</Button>
+          </div>
         </DialogHeader>
 
-        <div ref={ref} className="bg-white text-slate-900 p-8 rounded border" style={{ minHeight: 600 }}>
-          <div className="flex items-start justify-between gap-6 border-b pb-4">
-            <div className="flex items-center gap-3">
-              {biz.logo_url && <img src={biz.logo_url} alt="" crossOrigin="anonymous" className="h-16 w-16 object-contain" />}
-              <div>
-                <h2 className="text-xl font-bold">{biz.business_name}</h2>
-                {biz.address && <p className="text-xs whitespace-pre-line">{biz.address}</p>}
-                <p className="text-xs">
-                  {[biz.phone, biz.email].filter(Boolean).join(" · ")}
-                  {biz.tax_id && <> · Tax ID: {biz.tax_id}</>}
-                </p>
+        <div className="p-4 sm:p-6 bg-slate-100">
+          <div ref={ref} className="bg-white text-slate-900 rounded shadow-sm" style={{ minHeight: 600 }}>
+            {/* Accent bar */}
+            <div className="h-2 bg-slate-900 rounded-t" />
+
+            <div className="p-8">
+              {/* Header */}
+              <div className="flex items-start justify-between gap-6 pb-6 border-b border-slate-200">
+                <div className="flex items-start gap-4 min-w-0">
+                  {biz.logo_url && (
+                    <img src={biz.logo_url} alt="" crossOrigin="anonymous" className="h-16 w-16 object-contain rounded" />
+                  )}
+                  <div className="min-w-0">
+                    <h2 className="text-2xl font-bold tracking-tight leading-tight">{biz.business_name}</h2>
+                    {biz.address && <p className="text-xs text-slate-600 whitespace-pre-line mt-1">{biz.address}</p>}
+                    <p className="text-xs text-slate-600 mt-0.5">
+                      {[biz.phone, biz.email].filter(Boolean).join(" · ")}
+                    </p>
+                    {biz.tax_id && <p className="text-xs text-slate-600">Tax ID: {biz.tax_id}</p>}
+                  </div>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-3xl font-bold tracking-tight text-slate-900">QUOTATION</p>
+                  <p className="text-xs font-mono text-slate-500 mt-1">{quote.quote_number}</p>
+                  <p className="text-xs text-slate-600 mt-2">Date: {format(new Date(quote.created_at), "PPP")}</p>
+                  {quote.valid_until && (
+                    <p className="text-xs text-slate-600">Valid until: {format(new Date(quote.valid_until), "PPP")}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Bill to */}
+              <div className="grid grid-cols-2 gap-6 mt-6">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-2">Quote for</p>
+                  <p className="font-semibold text-base">{quote.client_name || "—"}</p>
+                  {quote.client_address && <p className="text-xs text-slate-600 whitespace-pre-line mt-0.5">{quote.client_address}</p>}
+                  {quote.client_phone && <p className="text-xs text-slate-600">{quote.client_phone}</p>}
+                  {quote.client_email && <p className="text-xs text-slate-600">{quote.client_email}</p>}
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-2">Status</p>
+                  <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase bg-slate-900 text-white">
+                    {quote.status}
+                  </span>
+                </div>
+              </div>
+
+              {/* Items */}
+              <table className="w-full mt-8 text-sm border-collapse">
+                <thead>
+                  <tr className="bg-slate-900 text-white text-left text-xs uppercase tracking-wider">
+                    <th className="py-3 px-3 font-semibold">Description</th>
+                    <th className="py-3 px-3 text-right font-semibold w-16">Qty</th>
+                    <th className="py-3 px-3 text-right font-semibold w-24">Unit Price</th>
+                    <th className="py-3 px-3 text-right font-semibold w-28">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {quote.items.map((it, i) => (
+                    <tr key={i} className="border-b border-slate-200">
+                      <td className="py-3 px-3">{it.description}</td>
+                      <td className="py-3 px-3 text-right">{it.quantity}</td>
+                      <td className="py-3 px-3 text-right">${Number(it.unit_price).toFixed(2)}</td>
+                      <td className="py-3 px-3 text-right font-medium">${(Number(it.quantity) * Number(it.unit_price)).toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {/* Totals */}
+              <div className="flex justify-end mt-6">
+                <div className="w-72 space-y-1.5 text-sm">
+                  <div className="flex justify-between text-slate-600">
+                    <span>Subtotal</span><span>${Number(quote.subtotal).toFixed(2)}</span>
+                  </div>
+                  {Number(quote.discount) > 0 && (
+                    <div className="flex justify-between text-slate-600">
+                      <span>Discount</span><span>−${Number(quote.discount).toFixed(2)}</span>
+                    </div>
+                  )}
+                  {Number(quote.tax) > 0 && (
+                    <div className="flex justify-between text-slate-600">
+                      <span>Tax</span><span>+${Number(quote.tax).toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between bg-slate-900 text-white px-3 py-2.5 rounded mt-2 font-bold text-base">
+                    <span>Total</span><span>${Number(quote.total).toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Notes & Footer */}
+              {(quote.notes || biz.invoice_footer) && (
+                <div className="mt-10 pt-4 border-t border-slate-200 text-xs text-slate-600 whitespace-pre-line space-y-2">
+                  {quote.notes && (
+                    <div>
+                      <p className="font-semibold text-slate-900 uppercase tracking-wider text-[10px] mb-1">Notes</p>
+                      <p>{quote.notes}</p>
+                    </div>
+                  )}
+                  {biz.invoice_footer && (
+                    <p className="text-center text-slate-500 pt-2">{biz.invoice_footer}</p>
+                  )}
+                </div>
+              )}
+
+              <div className="mt-8 pt-4 border-t border-slate-200 text-center text-[10px] text-slate-400 uppercase tracking-wider">
+                Thank you for your business
               </div>
             </div>
-            <div className="text-right">
-              <p className="text-2xl font-bold tracking-tight">QUOTATION</p>
-              <p className="text-xs font-mono">{quote.quote_number}</p>
-              <p className="text-xs">{format(new Date(quote.created_at), "PPP")}</p>
-              {quote.valid_until && <p className="text-xs">Valid until: {format(new Date(quote.valid_until), "PPP")}</p>}
-            </div>
           </div>
-
-          <div className="grid grid-cols-2 gap-6 mt-4">
-            <div>
-              <p className="text-xs uppercase text-slate-500 mb-1">Quote for</p>
-              <p className="font-semibold">{quote.client_name || "—"}</p>
-              {quote.client_address && <p className="text-xs whitespace-pre-line">{quote.client_address}</p>}
-              {quote.client_phone && <p className="text-xs">{quote.client_phone}</p>}
-              {quote.client_email && <p className="text-xs">{quote.client_email}</p>}
-            </div>
-          </div>
-
-          <table className="w-full mt-6 text-sm">
-            <thead>
-              <tr className="border-b border-slate-300 text-left text-xs uppercase text-slate-500">
-                <th className="py-2">Description</th>
-                <th className="text-right">Qty</th>
-                <th className="text-right">Unit</th>
-                <th className="text-right">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {quote.items.map((it, i) => (
-                <tr key={i} className="border-b border-slate-100">
-                  <td className="py-2">{it.description}</td>
-                  <td className="text-right">{it.quantity}</td>
-                  <td className="text-right">${Number(it.unit_price).toFixed(2)}</td>
-                  <td className="text-right">${(Number(it.quantity) * Number(it.unit_price)).toFixed(2)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          <div className="flex justify-end mt-4">
-            <div className="w-64 space-y-1 text-sm">
-              <div className="flex justify-between"><span>Subtotal</span><span>${Number(quote.subtotal).toFixed(2)}</span></div>
-              {Number(quote.discount) > 0 && <div className="flex justify-between"><span>Discount</span><span>−${Number(quote.discount).toFixed(2)}</span></div>}
-              {Number(quote.tax) > 0 && <div className="flex justify-between"><span>Tax</span><span>+${Number(quote.tax).toFixed(2)}</span></div>}
-              <div className="flex justify-between border-t pt-2 font-bold text-base">
-                <span>Total</span><span>${Number(quote.total).toFixed(2)}</span>
-              </div>
-            </div>
-          </div>
-
-          {(quote.notes || biz.invoice_footer) && (
-            <div className="mt-8 pt-4 border-t text-xs text-slate-600 whitespace-pre-line">
-              {quote.notes && <p className="mb-2"><strong>Notes:</strong> {quote.notes}</p>}
-              {biz.invoice_footer}
-            </div>
-          )}
         </div>
       </DialogContent>
     </Dialog>
