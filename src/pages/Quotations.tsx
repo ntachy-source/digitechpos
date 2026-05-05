@@ -167,9 +167,8 @@ const Quotations = () => {
   };
 
   return (
-    <AppLayout>
-      <div className="space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
             <h1 className="text-xl sm:text-2xl md:text-3xl font-bold flex items-center gap-2">
               <FileSpreadsheet className="h-6 w-6 sm:h-7 sm:w-7 text-primary shrink-0" /> Quotations
