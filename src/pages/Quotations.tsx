@@ -10,8 +10,10 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import { toast } from "sonner";
-import { FileSpreadsheet, Plus, Printer, Download, Eye, Trash2 } from "lucide-react";
+import { FileSpreadsheet, Plus, Printer, Download, Eye, Trash2, History } from "lucide-react";
 import { format } from "date-fns";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
@@ -49,12 +51,23 @@ const STATUS_COLORS: Record<string, string> = {
   expired: "bg-orange-500/15 text-orange-700 dark:text-orange-400",
 };
 
+interface SaleRow {
+  id: string;
+  created_at: string;
+  customer_name: string | null;
+  customer_phone: string | null;
+  total: number;
+  items_count?: number;
+}
+
 const Quotations = () => {
   const [quotes, setQuotes] = useState<Quotation[]>([]);
+  const [sales, setSales] = useState<SaleRow[]>([]);
   const [open, setOpen] = useState(false);
   const [previewing, setPreviewing] = useState<Quotation | null>(null);
   const [busy, setBusy] = useState(false);
   const [biz, setBiz] = useState<BizSnapshot | null>(null);
+  const [tab, setTab] = useState("quotations");
 
   const [client, setClient] = useState({ name: "", phone: "", email: "", address: "" });
   const [items, setItems] = useState<QuoteItem[]>([{ description: "", quantity: 1, unit_price: 0 }]);
@@ -67,12 +80,30 @@ const Quotations = () => {
     document.title = "Quotations · SGH POS";
     load();
     loadBiz();
+    loadSales();
   }, []);
 
   const load = async () => {
     const { data, error } = await supabase.from("quotations" as any).select("*").order("created_at", { ascending: false });
     if (error) return toast.error(error.message);
     setQuotes((data ?? []) as unknown as Quotation[]);
+  };
+
+  const loadSales = async () => {
+    const { data, error } = await supabase
+      .from("sales")
+      .select("id, created_at, customer_name, customer_phone, total, sale_items(count)")
+      .order("created_at", { ascending: false });
+    if (error) return;
+    const rows = (data ?? []).map((s: any) => ({
+      id: s.id,
+      created_at: s.created_at,
+      customer_name: s.customer_name,
+      customer_phone: s.customer_phone,
+      total: s.total,
+      items_count: s.sale_items?.[0]?.count ?? 0,
+    }));
+    setSales(rows);
   };
 
   const loadBiz = async () => {
@@ -138,56 +169,149 @@ const Quotations = () => {
   return (
     <AppLayout>
       <div className="space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
-              <FileSpreadsheet className="h-7 w-7 text-primary" /> Quotations
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold flex items-center gap-2">
+              <FileSpreadsheet className="h-6 w-6 sm:h-7 sm:w-7 text-primary shrink-0" /> Quotations
             </h1>
-            <p className="text-muted-foreground mt-1 text-sm">Create and send price quotes to your clients.</p>
+            <p className="text-muted-foreground mt-1 text-xs sm:text-sm">Create quotes and review sales history.</p>
           </div>
-          <Button onClick={() => setOpen(true)}><Plus className="h-4 w-4 mr-2" /> New Quotation</Button>
+          <Button onClick={() => setOpen(true)} size="sm" className="sm:size-default">
+            <Plus className="h-4 w-4 mr-2" /> New Quotation
+          </Button>
         </div>
 
-        <Card>
-          <CardHeader><CardTitle>All quotations ({quotes.length})</CardTitle></CardHeader>
-          <CardContent className="overflow-x-auto p-0 sm:p-6">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Quote #</TableHead>
-                  <TableHead>Client</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Valid until</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {quotes.map(q => (
-                  <TableRow key={q.id}>
-                    <TableCell className="font-mono text-xs">{q.quote_number}</TableCell>
-                    <TableCell>{q.client_name || <span className="text-muted-foreground">—</span>}</TableCell>
-                    <TableCell className="text-xs">{format(new Date(q.created_at), "PP")}</TableCell>
-                    <TableCell className="text-xs">{q.valid_until ? format(new Date(q.valid_until), "PP") : "—"}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className={STATUS_COLORS[q.status] ?? ""}>{q.status}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right font-semibold">${Number(q.total).toFixed(2)}</TableCell>
-                    <TableCell className="text-right">
-                      <Button size="sm" variant="ghost" onClick={() => setPreviewing(q)}>
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {quotes.length === 0 && (
-                  <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No quotations yet</TableCell></TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+        <Tabs value={tab} onValueChange={setTab}>
+          <TabsList className="grid w-full sm:w-auto grid-cols-2">
+            <TabsTrigger value="quotations">
+              <FileSpreadsheet className="h-4 w-4 mr-2" /> Quotations
+            </TabsTrigger>
+            <TabsTrigger value="history">
+              <History className="h-4 w-4 mr-2" /> Sales History
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="quotations" className="mt-4">
+            <Card>
+              <CardHeader className="px-4 sm:px-6"><CardTitle className="text-base sm:text-lg">All quotations ({quotes.length})</CardTitle></CardHeader>
+              <CardContent className="px-0 sm:px-6">
+                {/* Mobile cards */}
+                <div className="sm:hidden divide-y">
+                  {quotes.map(q => (
+                    <button key={q.id} onClick={() => setPreviewing(q)} className="w-full text-left px-4 py-3 active:bg-muted/50">
+                      <div className="flex justify-between items-start gap-2">
+                        <div className="min-w-0">
+                          <div className="font-mono text-xs text-muted-foreground">{q.quote_number}</div>
+                          <div className="font-medium truncate">{q.client_name || "—"}</div>
+                          <div className="text-xs text-muted-foreground">{format(new Date(q.created_at), "PP")}</div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <div className="font-semibold">${Number(q.total).toFixed(2)}</div>
+                          <Badge variant="secondary" className={`mt-1 text-[10px] ${STATUS_COLORS[q.status] ?? ""}`}>{q.status}</Badge>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                  {quotes.length === 0 && <div className="text-center text-muted-foreground py-8 text-sm">No quotations yet</div>}
+                </div>
+
+                {/* Desktop table */}
+                <div className="hidden sm:block overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Quote #</TableHead>
+                        <TableHead>Client</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Valid until</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Total</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {quotes.map(q => (
+                        <TableRow key={q.id}>
+                          <TableCell className="font-mono text-xs">{q.quote_number}</TableCell>
+                          <TableCell>{q.client_name || <span className="text-muted-foreground">—</span>}</TableCell>
+                          <TableCell className="text-xs">{format(new Date(q.created_at), "PP")}</TableCell>
+                          <TableCell className="text-xs">{q.valid_until ? format(new Date(q.valid_until), "PP") : "—"}</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary" className={STATUS_COLORS[q.status] ?? ""}>{q.status}</Badge>
+                          </TableCell>
+                          <TableCell className="text-right font-semibold">${Number(q.total).toFixed(2)}</TableCell>
+                          <TableCell className="text-right">
+                            <Button size="sm" variant="ghost" onClick={() => setPreviewing(q)}>
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {quotes.length === 0 && (
+                        <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No quotations yet</TableCell></TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="history" className="mt-4">
+            <Card>
+              <CardHeader className="px-4 sm:px-6"><CardTitle className="text-base sm:text-lg">Sales history ({sales.length})</CardTitle></CardHeader>
+              <CardContent className="px-0 sm:px-6">
+                {/* Mobile cards */}
+                <div className="sm:hidden divide-y">
+                  {sales.map(s => (
+                    <div key={s.id} className="px-4 py-3">
+                      <div className="flex justify-between items-start gap-2">
+                        <div className="min-w-0">
+                          <div className="font-medium truncate">{s.customer_name || "Walk-in customer"}</div>
+                          {s.customer_phone && <div className="text-xs text-muted-foreground">{s.customer_phone}</div>}
+                          <div className="text-xs text-muted-foreground">{format(new Date(s.created_at), "PPp")}</div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <div className="font-semibold">${Number(s.total).toFixed(2)}</div>
+                          <div className="text-xs text-muted-foreground">{s.items_count} item{s.items_count === 1 ? "" : "s"}</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {sales.length === 0 && <div className="text-center text-muted-foreground py-8 text-sm">No sales yet</div>}
+                </div>
+                {/* Desktop table */}
+                <div className="hidden sm:block overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Customer</TableHead>
+                        <TableHead>Phone</TableHead>
+                        <TableHead className="text-right">Items</TableHead>
+                        <TableHead className="text-right">Total</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {sales.map(s => (
+                        <TableRow key={s.id}>
+                          <TableCell className="text-xs">{format(new Date(s.created_at), "PPp")}</TableCell>
+                          <TableCell>{s.customer_name || <span className="text-muted-foreground">Walk-in</span>}</TableCell>
+                          <TableCell className="text-xs">{s.customer_phone || "—"}</TableCell>
+                          <TableCell className="text-right">{s.items_count}</TableCell>
+                          <TableCell className="text-right font-semibold">${Number(s.total).toFixed(2)}</TableCell>
+                        </TableRow>
+                      ))}
+                      {sales.length === 0 && (
+                        <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No sales yet</TableCell></TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
         {/* Editor */}
         <Dialog open={open} onOpenChange={setOpen}>
@@ -297,41 +421,40 @@ const QuotePreview = ({ quote, onClose, onStatus }: {
 
   return (
     <Dialog open={!!quote} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0">
-        <DialogHeader className="px-6 pt-6 pb-3 border-b">
-          <DialogTitle className="text-base font-semibold">
-            Quotation {quote.quote_number}
-          </DialogTitle>
-          <div className="flex flex-wrap items-center gap-2 pt-2">
-            <Select value={quote.status} onValueChange={(v) => onStatus(quote, v)}>
-              <SelectTrigger className="h-9 w-32"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="draft">Draft</SelectItem>
-                <SelectItem value="sent">Sent</SelectItem>
-                <SelectItem value="accepted">Accepted</SelectItem>
-                <SelectItem value="declined">Declined</SelectItem>
-                <SelectItem value="expired">Expired</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button size="sm" variant="outline" onClick={print}><Printer className="h-4 w-4 mr-2" />Print</Button>
-            <Button size="sm" onClick={downloadPdf}><Download className="h-4 w-4 mr-2" />PDF</Button>
-          </div>
-        </DialogHeader>
+      <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto p-0 w-[calc(100%-1rem)] sm:w-full">
+        <VisuallyHidden.Root>
+          <DialogTitle>Quotation {quote.quote_number}</DialogTitle>
+        </VisuallyHidden.Root>
+        <div className="sticky top-0 z-10 flex flex-wrap items-center gap-2 px-3 sm:px-6 py-2 sm:py-3 border-b bg-background">
+          <Select value={quote.status} onValueChange={(v) => onStatus(quote, v)}>
+            <SelectTrigger className="h-9 w-32"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="draft">Draft</SelectItem>
+              <SelectItem value="sent">Sent</SelectItem>
+              <SelectItem value="accepted">Accepted</SelectItem>
+              <SelectItem value="declined">Declined</SelectItem>
+              <SelectItem value="expired">Expired</SelectItem>
+            </SelectContent>
+          </Select>
+          <div className="flex-1" />
+          <Button size="sm" variant="outline" onClick={print}><Printer className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Print</span></Button>
+          <Button size="sm" onClick={downloadPdf}><Download className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">PDF</span></Button>
+        </div>
 
-        <div className="p-4 sm:p-6 bg-slate-100">
-          <div ref={ref} className="bg-white text-slate-900 rounded shadow-sm" style={{ minHeight: 600 }}>
+        <div className="p-2 sm:p-6 bg-slate-100">
+          <div ref={ref} className="bg-white text-slate-900 rounded shadow-sm">
             {/* Accent bar */}
             <div className="h-2 bg-slate-900 rounded-t" />
 
-            <div className="p-8">
+            <div className="p-4 sm:p-8">
               {/* Header */}
-              <div className="flex items-start justify-between gap-6 pb-6 border-b border-slate-200">
-                <div className="flex items-start gap-4 min-w-0">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 sm:gap-6 pb-4 sm:pb-6 border-b border-slate-200">
+                <div className="flex items-start gap-3 sm:gap-4 min-w-0">
                   {biz.logo_url && (
-                    <img src={biz.logo_url} alt="" crossOrigin="anonymous" className="h-16 w-16 object-contain rounded" />
+                    <img src={biz.logo_url} alt="" crossOrigin="anonymous" className="h-14 w-14 sm:h-16 sm:w-16 object-contain rounded shrink-0" />
                   )}
                   <div className="min-w-0">
-                    <h2 className="text-2xl font-bold tracking-tight leading-tight">{biz.business_name}</h2>
+                    <h2 className="text-lg sm:text-2xl font-bold tracking-tight leading-tight break-words">{biz.business_name}</h2>
                     {biz.address && <p className="text-xs text-slate-600 whitespace-pre-line mt-1">{biz.address}</p>}
                     <p className="text-xs text-slate-600 mt-0.5">
                       {[biz.phone, biz.email].filter(Boolean).join(" · ")}
@@ -339,8 +462,8 @@ const QuotePreview = ({ quote, onClose, onStatus }: {
                     {biz.tax_id && <p className="text-xs text-slate-600">Tax ID: {biz.tax_id}</p>}
                   </div>
                 </div>
-                <div className="text-right shrink-0">
-                  <p className="text-3xl font-bold tracking-tight text-slate-900">QUOTATION</p>
+                <div className="sm:text-right shrink-0">
+                  <p className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">QUOTATION</p>
                   <p className="text-xs font-mono text-slate-500 mt-1">{quote.quote_number}</p>
                   <p className="text-xs text-slate-600 mt-2">Date: {format(new Date(quote.created_at), "PPP")}</p>
                   {quote.valid_until && (
