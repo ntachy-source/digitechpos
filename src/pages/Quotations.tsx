@@ -50,15 +50,6 @@ const STATUS_COLORS: Record<string, string> = {
   expired: "bg-orange-500/15 text-orange-700 dark:text-orange-400",
 };
 
-interface SaleRow {
-  id: string;
-  created_at: string;
-  customer_name: string | null;
-  customer_phone: string | null;
-  total: number;
-  items_count?: number;
-}
-
 const Quotations = () => {
   const [quotes, setQuotes] = useState<Quotation[]>([]);
   const [open, setOpen] = useState(false);
