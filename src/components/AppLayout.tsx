@@ -14,6 +14,7 @@ const navItems = [
   { to: "/products", label: "Products", icon: Boxes, roles: ["staff"] as const },
   { to: "/invoices", label: "Invoices", icon: FileText, roles: ["admin", "staff"] as const },
   { to: "/quotations", label: "Quotations", icon: FileSpreadsheet, roles: ["admin", "staff"] as const },
+  { to: "/sales-history", label: "Sales History", icon: History, roles: ["admin", "staff"] as const },
   { to: "/reports", label: "Reports", icon: BarChart3, roles: ["admin"] as const },
   { to: "/licenses", label: "Licenses", icon: KeyRound, roles: ["admin"] as const },
   { to: "/settings", label: "Settings", icon: SettingsIcon, roles: ["admin", "staff"] as const },
