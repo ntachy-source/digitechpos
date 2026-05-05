@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
+
 import { toast } from "sonner";
 import { FileSpreadsheet, Plus, Printer, Download, Eye, Trash2, History } from "lucide-react";
 import { format } from "date-fns";
