@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
+
 import { toast } from "sonner";
 import { FileSpreadsheet, Plus, Printer, Download, Eye, Trash2, History } from "lucide-react";
 import { format } from "date-fns";
@@ -420,9 +420,7 @@ const QuotePreview = ({ quote, onClose, onStatus }: {
   return (
     <Dialog open={!!quote} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto p-0 w-[calc(100%-1rem)] sm:w-full">
-        <VisuallyHidden.Root>
-          <DialogTitle>Quotation {quote.quote_number}</DialogTitle>
-        </VisuallyHidden.Root>
+        <DialogTitle className="sr-only">Quotation {quote.quote_number}</DialogTitle>
         <div className="sticky top-0 z-10 flex flex-wrap items-center gap-2 px-3 sm:px-6 py-2 sm:py-3 border-b bg-background">
           <Select value={quote.status} onValueChange={(v) => onStatus(quote, v)}>
             <SelectTrigger className="h-9 w-32"><SelectValue /></SelectTrigger>
