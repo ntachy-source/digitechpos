@@ -51,12 +51,23 @@ const STATUS_COLORS: Record<string, string> = {
   expired: "bg-orange-500/15 text-orange-700 dark:text-orange-400",
 };
 
+interface SaleRow {
+  id: string;
+  created_at: string;
+  customer_name: string | null;
+  customer_phone: string | null;
+  total: number;
+  items_count?: number;
+}
+
 const Quotations = () => {
   const [quotes, setQuotes] = useState<Quotation[]>([]);
+  const [sales, setSales] = useState<SaleRow[]>([]);
   const [open, setOpen] = useState(false);
   const [previewing, setPreviewing] = useState<Quotation | null>(null);
   const [busy, setBusy] = useState(false);
   const [biz, setBiz] = useState<BizSnapshot | null>(null);
+  const [tab, setTab] = useState("quotations");
 
   const [client, setClient] = useState({ name: "", phone: "", email: "", address: "" });
   const [items, setItems] = useState<QuoteItem[]>([{ description: "", quantity: 1, unit_price: 0 }]);
@@ -69,12 +80,30 @@ const Quotations = () => {
     document.title = "Quotations · SGH POS";
     load();
     loadBiz();
+    loadSales();
   }, []);
 
   const load = async () => {
     const { data, error } = await supabase.from("quotations" as any).select("*").order("created_at", { ascending: false });
     if (error) return toast.error(error.message);
     setQuotes((data ?? []) as unknown as Quotation[]);
+  };
+
+  const loadSales = async () => {
+    const { data, error } = await supabase
+      .from("sales")
+      .select("id, created_at, customer_name, customer_phone, total, sale_items(count)")
+      .order("created_at", { ascending: false });
+    if (error) return;
+    const rows = (data ?? []).map((s: any) => ({
+      id: s.id,
+      created_at: s.created_at,
+      customer_name: s.customer_name,
+      customer_phone: s.customer_phone,
+      total: s.total,
+      items_count: s.sale_items?.[0]?.count ?? 0,
+    }));
+    setSales(rows);
   };
 
   const loadBiz = async () => {
