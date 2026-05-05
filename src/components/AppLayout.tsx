@@ -1,6 +1,6 @@
 import { ReactNode, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Package, ScanLine, BarChart3, LogOut, ShieldCheck, ScanBarcode, Menu, FileText, FileSpreadsheet, KeyRound, Settings as SettingsIcon, Boxes } from "lucide-react";
+import { LayoutDashboard, Package, ScanLine, BarChart3, LogOut, ShieldCheck, ScanBarcode, Menu, FileText, FileSpreadsheet, KeyRound, Settings as SettingsIcon, Boxes, History } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useBusinessName } from "@/hooks/useBusinessName";
 import { Button } from "@/components/ui/button";
