@@ -10,10 +10,9 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { toast } from "sonner";
-import { FileSpreadsheet, Plus, Printer, Download, Eye, Trash2, History } from "lucide-react";
+import { FileSpreadsheet, Plus, Printer, Download, Eye, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
@@ -51,23 +50,12 @@ const STATUS_COLORS: Record<string, string> = {
   expired: "bg-orange-500/15 text-orange-700 dark:text-orange-400",
 };
 
-interface SaleRow {
-  id: string;
-  created_at: string;
-  customer_name: string | null;
-  customer_phone: string | null;
-  total: number;
-  items_count?: number;
-}
-
 const Quotations = () => {
   const [quotes, setQuotes] = useState<Quotation[]>([]);
-  const [sales, setSales] = useState<SaleRow[]>([]);
   const [open, setOpen] = useState(false);
   const [previewing, setPreviewing] = useState<Quotation | null>(null);
   const [busy, setBusy] = useState(false);
   const [biz, setBiz] = useState<BizSnapshot | null>(null);
-  const [tab, setTab] = useState("quotations");
 
   const [client, setClient] = useState({ name: "", phone: "", email: "", address: "" });
   const [items, setItems] = useState<QuoteItem[]>([{ description: "", quantity: 1, unit_price: 0 }]);
@@ -80,30 +68,12 @@ const Quotations = () => {
     document.title = "Quotations · SGH POS";
     load();
     loadBiz();
-    loadSales();
   }, []);
 
   const load = async () => {
     const { data, error } = await supabase.from("quotations" as any).select("*").order("created_at", { ascending: false });
     if (error) return toast.error(error.message);
     setQuotes((data ?? []) as unknown as Quotation[]);
-  };
-
-  const loadSales = async () => {
-    const { data, error } = await supabase
-      .from("sales")
-      .select("id, created_at, customer_name, customer_phone, total, sale_items(count)")
-      .order("created_at", { ascending: false });
-    if (error) return;
-    const rows = (data ?? []).map((s: any) => ({
-      id: s.id,
-      created_at: s.created_at,
-      customer_name: s.customer_name,
-      customer_phone: s.customer_phone,
-      total: s.total,
-      items_count: s.sale_items?.[0]?.count ?? 0,
-    }));
-    setSales(rows);
   };
 
   const loadBiz = async () => {
@@ -180,137 +150,69 @@ const Quotations = () => {
           </Button>
         </div>
 
-        <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="grid w-full sm:w-auto grid-cols-2">
-            <TabsTrigger value="quotations">
-              <FileSpreadsheet className="h-4 w-4 mr-2" /> Quotations
-            </TabsTrigger>
-            <TabsTrigger value="history">
-              <History className="h-4 w-4 mr-2" /> Sales History
-            </TabsTrigger>
-          </TabsList>
+      <Card>
+        <CardHeader className="px-4 sm:px-6"><CardTitle className="text-base sm:text-lg">All quotations ({quotes.length})</CardTitle></CardHeader>
+        <CardContent className="px-0 sm:px-6">
+          {/* Mobile cards */}
+          <div className="sm:hidden divide-y">
+            {quotes.map(q => (
+              <button key={q.id} onClick={() => setPreviewing(q)} className="w-full text-left px-4 py-3 active:bg-muted/50">
+                <div className="flex justify-between items-start gap-2">
+                  <div className="min-w-0">
+                    <div className="font-mono text-xs text-muted-foreground">{q.quote_number}</div>
+                    <div className="font-medium truncate">{q.client_name || "—"}</div>
+                    <div className="text-xs text-muted-foreground">{format(new Date(q.created_at), "PP")}</div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className="font-semibold">${Number(q.total).toFixed(2)}</div>
+                    <Badge variant="secondary" className={`mt-1 text-[10px] ${STATUS_COLORS[q.status] ?? ""}`}>{q.status}</Badge>
+                  </div>
+                </div>
+              </button>
+            ))}
+            {quotes.length === 0 && <div className="text-center text-muted-foreground py-8 text-sm">No quotations yet</div>}
+          </div>
 
-          <TabsContent value="quotations" className="mt-4">
-            <Card>
-              <CardHeader className="px-4 sm:px-6"><CardTitle className="text-base sm:text-lg">All quotations ({quotes.length})</CardTitle></CardHeader>
-              <CardContent className="px-0 sm:px-6">
-                {/* Mobile cards */}
-                <div className="sm:hidden divide-y">
-                  {quotes.map(q => (
-                    <button key={q.id} onClick={() => setPreviewing(q)} className="w-full text-left px-4 py-3 active:bg-muted/50">
-                      <div className="flex justify-between items-start gap-2">
-                        <div className="min-w-0">
-                          <div className="font-mono text-xs text-muted-foreground">{q.quote_number}</div>
-                          <div className="font-medium truncate">{q.client_name || "—"}</div>
-                          <div className="text-xs text-muted-foreground">{format(new Date(q.created_at), "PP")}</div>
-                        </div>
-                        <div className="text-right shrink-0">
-                          <div className="font-semibold">${Number(q.total).toFixed(2)}</div>
-                          <Badge variant="secondary" className={`mt-1 text-[10px] ${STATUS_COLORS[q.status] ?? ""}`}>{q.status}</Badge>
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                  {quotes.length === 0 && <div className="text-center text-muted-foreground py-8 text-sm">No quotations yet</div>}
-                </div>
-
-                {/* Desktop table */}
-                <div className="hidden sm:block overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Quote #</TableHead>
-                        <TableHead>Client</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Valid until</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Total</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {quotes.map(q => (
-                        <TableRow key={q.id}>
-                          <TableCell className="font-mono text-xs">{q.quote_number}</TableCell>
-                          <TableCell>{q.client_name || <span className="text-muted-foreground">—</span>}</TableCell>
-                          <TableCell className="text-xs">{format(new Date(q.created_at), "PP")}</TableCell>
-                          <TableCell className="text-xs">{q.valid_until ? format(new Date(q.valid_until), "PP") : "—"}</TableCell>
-                          <TableCell>
-                            <Badge variant="secondary" className={STATUS_COLORS[q.status] ?? ""}>{q.status}</Badge>
-                          </TableCell>
-                          <TableCell className="text-right font-semibold">${Number(q.total).toFixed(2)}</TableCell>
-                          <TableCell className="text-right">
-                            <Button size="sm" variant="ghost" onClick={() => setPreviewing(q)}>
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                      {quotes.length === 0 && (
-                        <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No quotations yet</TableCell></TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="history" className="mt-4">
-            <Card>
-              <CardHeader className="px-4 sm:px-6"><CardTitle className="text-base sm:text-lg">Sales history ({sales.length})</CardTitle></CardHeader>
-              <CardContent className="px-0 sm:px-6">
-                {/* Mobile cards */}
-                <div className="sm:hidden divide-y">
-                  {sales.map(s => (
-                    <div key={s.id} className="px-4 py-3">
-                      <div className="flex justify-between items-start gap-2">
-                        <div className="min-w-0">
-                          <div className="font-medium truncate">{s.customer_name || "Walk-in customer"}</div>
-                          {s.customer_phone && <div className="text-xs text-muted-foreground">{s.customer_phone}</div>}
-                          <div className="text-xs text-muted-foreground">{format(new Date(s.created_at), "PPp")}</div>
-                        </div>
-                        <div className="text-right shrink-0">
-                          <div className="font-semibold">${Number(s.total).toFixed(2)}</div>
-                          <div className="text-xs text-muted-foreground">{s.items_count} item{s.items_count === 1 ? "" : "s"}</div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  {sales.length === 0 && <div className="text-center text-muted-foreground py-8 text-sm">No sales yet</div>}
-                </div>
-                {/* Desktop table */}
-                <div className="hidden sm:block overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Customer</TableHead>
-                        <TableHead>Phone</TableHead>
-                        <TableHead className="text-right">Items</TableHead>
-                        <TableHead className="text-right">Total</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {sales.map(s => (
-                        <TableRow key={s.id}>
-                          <TableCell className="text-xs">{format(new Date(s.created_at), "PPp")}</TableCell>
-                          <TableCell>{s.customer_name || <span className="text-muted-foreground">Walk-in</span>}</TableCell>
-                          <TableCell className="text-xs">{s.customer_phone || "—"}</TableCell>
-                          <TableCell className="text-right">{s.items_count}</TableCell>
-                          <TableCell className="text-right font-semibold">${Number(s.total).toFixed(2)}</TableCell>
-                        </TableRow>
-                      ))}
-                      {sales.length === 0 && (
-                        <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No sales yet</TableCell></TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+          {/* Desktop table */}
+          <div className="hidden sm:block overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Quote #</TableHead>
+                  <TableHead>Client</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Valid until</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {quotes.map(q => (
+                  <TableRow key={q.id}>
+                    <TableCell className="font-mono text-xs">{q.quote_number}</TableCell>
+                    <TableCell>{q.client_name || <span className="text-muted-foreground">—</span>}</TableCell>
+                    <TableCell className="text-xs">{format(new Date(q.created_at), "PP")}</TableCell>
+                    <TableCell className="text-xs">{q.valid_until ? format(new Date(q.valid_until), "PP") : "—"}</TableCell>
+                    <TableCell>
+                      <Badge variant="secondary" className={STATUS_COLORS[q.status] ?? ""}>{q.status}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-semibold">${Number(q.total).toFixed(2)}</TableCell>
+                    <TableCell className="text-right">
+                      <Button size="sm" variant="ghost" onClick={() => setPreviewing(q)}>
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {quotes.length === 0 && (
+                  <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No quotations yet</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
 
         {/* Editor */}
         <Dialog open={open} onOpenChange={setOpen}>

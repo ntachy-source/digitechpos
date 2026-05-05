@@ -16,6 +16,7 @@ import Licenses from "./pages/Licenses";
 import Settings from "./pages/Settings";
 import Invoices from "./pages/Invoices";
 import Quotations from "./pages/Quotations";
+import SalesHistory from "./pages/SalesHistory";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/reports" element={<ProtectedRoute requireRole="admin"><Reports /></ProtectedRoute>} />
             <Route path="/invoices" element={<ProtectedRoute><Invoices /></ProtectedRoute>} />
             <Route path="/quotations" element={<ProtectedRoute><Quotations /></ProtectedRoute>} />
+            <Route path="/sales-history" element={<ProtectedRoute><SalesHistory /></ProtectedRoute>} />
             <Route path="/licenses" element={<ProtectedRoute requireRole="admin"><Licenses /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
