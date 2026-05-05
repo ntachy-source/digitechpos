@@ -378,9 +378,8 @@ const Quotations = () => {
           </DialogContent>
         </Dialog>
 
-        <QuotePreview quote={previewing} onClose={() => setPreviewing(null)} onStatus={setStatus} />
-      </div>
-    </AppLayout>
+      <QuotePreview quote={previewing} onClose={() => setPreviewing(null)} onStatus={setStatus} />
+    </div>
   );
 };
 
