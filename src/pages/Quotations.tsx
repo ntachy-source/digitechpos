@@ -421,41 +421,40 @@ const QuotePreview = ({ quote, onClose, onStatus }: {
 
   return (
     <Dialog open={!!quote} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0">
-        <DialogHeader className="px-6 pt-6 pb-3 border-b">
-          <DialogTitle className="text-base font-semibold">
-            Quotation {quote.quote_number}
-          </DialogTitle>
-          <div className="flex flex-wrap items-center gap-2 pt-2">
-            <Select value={quote.status} onValueChange={(v) => onStatus(quote, v)}>
-              <SelectTrigger className="h-9 w-32"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="draft">Draft</SelectItem>
-                <SelectItem value="sent">Sent</SelectItem>
-                <SelectItem value="accepted">Accepted</SelectItem>
-                <SelectItem value="declined">Declined</SelectItem>
-                <SelectItem value="expired">Expired</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button size="sm" variant="outline" onClick={print}><Printer className="h-4 w-4 mr-2" />Print</Button>
-            <Button size="sm" onClick={downloadPdf}><Download className="h-4 w-4 mr-2" />PDF</Button>
-          </div>
-        </DialogHeader>
+      <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto p-0 w-[calc(100%-1rem)] sm:w-full">
+        <VisuallyHidden.Root>
+          <DialogTitle>Quotation {quote.quote_number}</DialogTitle>
+        </VisuallyHidden.Root>
+        <div className="sticky top-0 z-10 flex flex-wrap items-center gap-2 px-3 sm:px-6 py-2 sm:py-3 border-b bg-background">
+          <Select value={quote.status} onValueChange={(v) => onStatus(quote, v)}>
+            <SelectTrigger className="h-9 w-32"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="draft">Draft</SelectItem>
+              <SelectItem value="sent">Sent</SelectItem>
+              <SelectItem value="accepted">Accepted</SelectItem>
+              <SelectItem value="declined">Declined</SelectItem>
+              <SelectItem value="expired">Expired</SelectItem>
+            </SelectContent>
+          </Select>
+          <div className="flex-1" />
+          <Button size="sm" variant="outline" onClick={print}><Printer className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Print</span></Button>
+          <Button size="sm" onClick={downloadPdf}><Download className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">PDF</span></Button>
+        </div>
 
-        <div className="p-4 sm:p-6 bg-slate-100">
-          <div ref={ref} className="bg-white text-slate-900 rounded shadow-sm" style={{ minHeight: 600 }}>
+        <div className="p-2 sm:p-6 bg-slate-100">
+          <div ref={ref} className="bg-white text-slate-900 rounded shadow-sm">
             {/* Accent bar */}
             <div className="h-2 bg-slate-900 rounded-t" />
 
-            <div className="p-8">
+            <div className="p-4 sm:p-8">
               {/* Header */}
-              <div className="flex items-start justify-between gap-6 pb-6 border-b border-slate-200">
-                <div className="flex items-start gap-4 min-w-0">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 sm:gap-6 pb-4 sm:pb-6 border-b border-slate-200">
+                <div className="flex items-start gap-3 sm:gap-4 min-w-0">
                   {biz.logo_url && (
-                    <img src={biz.logo_url} alt="" crossOrigin="anonymous" className="h-16 w-16 object-contain rounded" />
+                    <img src={biz.logo_url} alt="" crossOrigin="anonymous" className="h-14 w-14 sm:h-16 sm:w-16 object-contain rounded shrink-0" />
                   )}
                   <div className="min-w-0">
-                    <h2 className="text-2xl font-bold tracking-tight leading-tight">{biz.business_name}</h2>
+                    <h2 className="text-lg sm:text-2xl font-bold tracking-tight leading-tight break-words">{biz.business_name}</h2>
                     {biz.address && <p className="text-xs text-slate-600 whitespace-pre-line mt-1">{biz.address}</p>}
                     <p className="text-xs text-slate-600 mt-0.5">
                       {[biz.phone, biz.email].filter(Boolean).join(" · ")}
@@ -463,8 +462,8 @@ const QuotePreview = ({ quote, onClose, onStatus }: {
                     {biz.tax_id && <p className="text-xs text-slate-600">Tax ID: {biz.tax_id}</p>}
                   </div>
                 </div>
-                <div className="text-right shrink-0">
-                  <p className="text-3xl font-bold tracking-tight text-slate-900">QUOTATION</p>
+                <div className="sm:text-right shrink-0">
+                  <p className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">QUOTATION</p>
                   <p className="text-xs font-mono text-slate-500 mt-1">{quote.quote_number}</p>
                   <p className="text-xs text-slate-600 mt-2">Date: {format(new Date(quote.created_at), "PPP")}</p>
                   {quote.valid_until && (
