@@ -16,6 +16,7 @@ import Licenses from "./pages/Licenses";
 import Settings from "./pages/Settings";
 import Invoices from "./pages/Invoices";
 import Quotations from "./pages/Quotations";
+import SalesHistory from "./pages/SalesHistory";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
