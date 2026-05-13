@@ -305,18 +305,61 @@ const QuotePreview = ({ quote, onClose, onStatus }: {
 
   const downloadPdf = async () => {
     if (!ref.current) return;
-    const imgs = Array.from(ref.current.querySelectorAll("img"));
-    await Promise.all(imgs.map(im => new Promise<void>(resolve => {
-      if (im.complete && im.naturalWidth > 0) return resolve();
-      im.onload = () => resolve(); im.onerror = () => resolve();
-    })));
-    const canvas = await html2canvas(ref.current, { scale: 2, backgroundColor: "#ffffff", useCORS: true, logging: false });
-    const img = canvas.toDataURL("image/png");
-    const pdf = new jsPDF({ unit: "pt", format: "a4" });
-    const pw = pdf.internal.pageSize.getWidth();
-    const ph = (canvas.height * pw) / canvas.width;
-    pdf.addImage(img, "PNG", 0, 0, pw, ph);
-    pdf.save(`${quote.quote_number}.pdf`);
+    // Clone node off-screen at fixed A4 width so layout doesn't depend on viewport
+    const source = ref.current;
+    const clone = source.cloneNode(true) as HTMLElement;
+    const A4_W_PX = 794; // ~ A4 width at 96dpi
+    const wrapper = document.createElement("div");
+    wrapper.style.cssText = `position:fixed;left:-10000px;top:0;width:${A4_W_PX}px;background:#ffffff;`;
+    clone.style.width = `${A4_W_PX}px`;
+    wrapper.appendChild(clone);
+    document.body.appendChild(wrapper);
+
+    try {
+      const imgs = Array.from(clone.querySelectorAll("img"));
+      await Promise.all(imgs.map(im => new Promise<void>(resolve => {
+        if (im.complete && im.naturalWidth > 0) return resolve();
+        im.onload = () => resolve(); im.onerror = () => resolve();
+      })));
+
+      const canvas = await html2canvas(clone, { scale: 2, backgroundColor: "#ffffff", useCORS: true, logging: false, windowWidth: A4_W_PX });
+
+      const pdf = new jsPDF({ unit: "pt", format: "a4" });
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const margin = 0;
+      const usableW = pageW - margin * 2;
+      const ratio = usableW / canvas.width;
+      const fullH = canvas.height * ratio;
+
+      if (fullH <= pageH) {
+        pdf.addImage(canvas.toDataURL("image/png"), "PNG", margin, margin, usableW, fullH);
+      } else {
+        // Slice the canvas into page-sized chunks
+        const pageHeightPx = Math.floor((pageH / ratio));
+        let rendered = 0;
+        let first = true;
+        while (rendered < canvas.height) {
+          const sliceH = Math.min(pageHeightPx, canvas.height - rendered);
+          const pageCanvas = document.createElement("canvas");
+          pageCanvas.width = canvas.width;
+          pageCanvas.height = sliceH;
+          const ctx = pageCanvas.getContext("2d");
+          if (!ctx) break;
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+          ctx.drawImage(canvas, 0, rendered, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
+          if (!first) pdf.addPage();
+          first = false;
+          pdf.addImage(pageCanvas.toDataURL("image/png"), "PNG", margin, margin, usableW, sliceH * ratio);
+          rendered += sliceH;
+        }
+      }
+
+      pdf.save(`${quote.quote_number}.pdf`);
+    } finally {
+      document.body.removeChild(wrapper);
+    }
   };
 
   return (
