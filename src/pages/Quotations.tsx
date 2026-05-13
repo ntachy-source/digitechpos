@@ -322,9 +322,10 @@ const QuotePreview = ({ quote, onClose, onStatus }: {
         im.onload = () => resolve(); im.onerror = () => resolve();
       })));
 
-      const canvas = await html2canvas(clone, { scale: 2, backgroundColor: "#ffffff", useCORS: true, logging: false, windowWidth: A4_W_PX });
+      const canvas = await html2canvas(clone, { scale: 1.5, backgroundColor: "#ffffff", useCORS: true, logging: false, windowWidth: A4_W_PX });
 
-      const pdf = new jsPDF({ unit: "pt", format: "a4" });
+      const pdf = new jsPDF({ unit: "pt", format: "a4", compress: true });
+      const JPEG_QUALITY = 0.7;
       const pageW = pdf.internal.pageSize.getWidth();
       const pageH = pdf.internal.pageSize.getHeight();
       const margin = 0;
@@ -333,7 +334,7 @@ const QuotePreview = ({ quote, onClose, onStatus }: {
       const fullH = canvas.height * ratio;
 
       if (fullH <= pageH) {
-        pdf.addImage(canvas.toDataURL("image/png"), "PNG", margin, margin, usableW, fullH);
+        pdf.addImage(canvas.toDataURL("image/jpeg", JPEG_QUALITY), "JPEG", margin, margin, usableW, fullH, undefined, "FAST");
       } else {
         // Slice the canvas into page-sized chunks
         const pageHeightPx = Math.floor((pageH / ratio));
@@ -351,7 +352,7 @@ const QuotePreview = ({ quote, onClose, onStatus }: {
           ctx.drawImage(canvas, 0, rendered, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
           if (!first) pdf.addPage();
           first = false;
-          pdf.addImage(pageCanvas.toDataURL("image/png"), "PNG", margin, margin, usableW, sliceH * ratio);
+          pdf.addImage(pageCanvas.toDataURL("image/jpeg", JPEG_QUALITY), "JPEG", margin, margin, usableW, sliceH * ratio, undefined, "FAST");
           rendered += sliceH;
         }
       }
