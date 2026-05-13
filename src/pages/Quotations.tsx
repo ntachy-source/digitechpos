@@ -322,9 +322,10 @@ const QuotePreview = ({ quote, onClose, onStatus }: {
         im.onload = () => resolve(); im.onerror = () => resolve();
       })));
 
-      const canvas = await html2canvas(clone, { scale: 2, backgroundColor: "#ffffff", useCORS: true, logging: false, windowWidth: A4_W_PX });
+      const canvas = await html2canvas(clone, { scale: 1.5, backgroundColor: "#ffffff", useCORS: true, logging: false, windowWidth: A4_W_PX });
 
-      const pdf = new jsPDF({ unit: "pt", format: "a4" });
+      const pdf = new jsPDF({ unit: "pt", format: "a4", compress: true });
+      const JPEG_QUALITY = 0.7;
       const pageW = pdf.internal.pageSize.getWidth();
       const pageH = pdf.internal.pageSize.getHeight();
       const margin = 0;
