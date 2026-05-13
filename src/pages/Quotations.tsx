@@ -352,7 +352,7 @@ const QuotePreview = ({ quote, onClose, onStatus }: {
           ctx.drawImage(canvas, 0, rendered, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
           if (!first) pdf.addPage();
           first = false;
-          pdf.addImage(pageCanvas.toDataURL("image/png"), "PNG", margin, margin, usableW, sliceH * ratio);
+          pdf.addImage(pageCanvas.toDataURL("image/jpeg", JPEG_QUALITY), "JPEG", margin, margin, usableW, sliceH * ratio, undefined, "FAST");
           rendered += sliceH;
         }
       }
