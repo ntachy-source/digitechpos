@@ -334,7 +334,7 @@ const QuotePreview = ({ quote, onClose, onStatus }: {
       const fullH = canvas.height * ratio;
 
       if (fullH <= pageH) {
-        pdf.addImage(canvas.toDataURL("image/png"), "PNG", margin, margin, usableW, fullH);
+        pdf.addImage(canvas.toDataURL("image/jpeg", JPEG_QUALITY), "JPEG", margin, margin, usableW, fullH, undefined, "FAST");
       } else {
         // Slice the canvas into page-sized chunks
         const pageHeightPx = Math.floor((pageH / ratio));
