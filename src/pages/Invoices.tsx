@@ -169,48 +169,70 @@ const Invoices = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
-            <FileText className="h-7 w-7 text-primary" /> Invoices
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold flex items-center gap-2">
+            <FileText className="h-6 w-6 sm:h-7 sm:w-7 text-primary shrink-0" /> Invoices
           </h1>
-          <p className="text-muted-foreground mt-1 text-sm">Generate professional invoices from completed sales.</p>
+          <p className="text-muted-foreground mt-1 text-xs sm:text-sm">Generate professional invoices from completed sales.</p>
         </div>
-        <Button onClick={() => setOpen(true)}><Plus className="h-4 w-4 mr-2" /> New Invoice</Button>
+        <Button onClick={() => setOpen(true)} className="w-full sm:w-auto"><Plus className="h-4 w-4 mr-2" /> New Invoice</Button>
       </div>
 
       <Card>
-        <CardHeader><CardTitle>All invoices ({invoices.length})</CardTitle></CardHeader>
-        <CardContent className="overflow-x-auto p-0 sm:p-6">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Invoice #</TableHead>
-                <TableHead>Client</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {invoices.map(inv => (
-                <TableRow key={inv.id}>
-                  <TableCell className="font-mono text-xs">{inv.invoice_number}</TableCell>
-                  <TableCell>{inv.client_name || <span className="text-muted-foreground">—</span>}</TableCell>
-                  <TableCell className="text-xs">{format(new Date(inv.created_at), "PP")}</TableCell>
-                  <TableCell className="text-right font-semibold">${Number(inv.total).toFixed(2)}</TableCell>
-                  <TableCell className="text-right">
-                    <Button size="sm" variant="ghost" onClick={() => setPreviewing(inv)}>
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
+        <CardHeader className="px-4 sm:px-6"><CardTitle className="text-base sm:text-lg">All invoices ({invoices.length})</CardTitle></CardHeader>
+        <CardContent className="px-0 sm:px-6">
+          {/* Mobile cards */}
+          <div className="sm:hidden divide-y">
+            {invoices.map(inv => (
+              <button key={inv.id} onClick={() => setPreviewing(inv)} className="w-full text-left px-4 py-3 hover:bg-muted/40 transition-colors">
+                <div className="flex justify-between items-start gap-2">
+                  <div className="min-w-0">
+                    <div className="font-mono text-xs text-muted-foreground">{inv.invoice_number}</div>
+                    <div className="font-medium truncate">{inv.client_name || "No client"}</div>
+                    <div className="text-xs text-muted-foreground">{format(new Date(inv.created_at), "PP")}</div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className="font-semibold">${Number(inv.total).toFixed(2)}</div>
+                    <Eye className="h-4 w-4 inline-block mt-1 text-muted-foreground" />
+                  </div>
+                </div>
+              </button>
+            ))}
+            {invoices.length === 0 && <div className="text-center text-muted-foreground py-8 text-sm">No invoices yet</div>}
+          </div>
+          {/* Desktop table */}
+          <div className="hidden sm:block overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Invoice #</TableHead>
+                  <TableHead>Client</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-              {invoices.length === 0 && (
-                <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No invoices yet</TableCell></TableRow>
-              )}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {invoices.map(inv => (
+                  <TableRow key={inv.id}>
+                    <TableCell className="font-mono text-xs whitespace-nowrap">{inv.invoice_number}</TableCell>
+                    <TableCell>{inv.client_name || <span className="text-muted-foreground">—</span>}</TableCell>
+                    <TableCell className="text-xs whitespace-nowrap">{format(new Date(inv.created_at), "PP")}</TableCell>
+                    <TableCell className="text-right font-semibold whitespace-nowrap">${Number(inv.total).toFixed(2)}</TableCell>
+                    <TableCell className="text-right">
+                      <Button size="sm" variant="ghost" onClick={() => setPreviewing(inv)}>
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {invoices.length === 0 && (
+                  <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No invoices yet</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 

@@ -139,16 +139,16 @@ const Licenses = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap gap-4 items-center justify-between">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
-            <KeyRound className="h-7 w-7 text-primary" /> License Keys
+      <div className="flex flex-wrap gap-3 items-start sm:items-center justify-between">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold flex items-center gap-2">
+            <KeyRound className="h-6 w-6 sm:h-7 sm:w-7 text-primary shrink-0" /> License Keys
           </h1>
-          <p className="text-muted-foreground mt-1 text-sm">Generate and manage access keys for clients.</p>
+          <p className="text-muted-foreground mt-1 text-xs sm:text-sm">Generate and manage access keys for clients.</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button><Plus className="h-4 w-4 mr-2" /> Generate Key</Button>
+            <Button className="w-full sm:w-auto"><Plus className="h-4 w-4 mr-2" /> Generate Key</Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>Generate new license key</DialogTitle></DialogHeader>
@@ -192,67 +192,125 @@ const Licenses = () => {
       </div>
 
       <Card>
-        <CardHeader><CardTitle>All licenses ({licenses.length})</CardTitle></CardHeader>
-        <CardContent className="overflow-x-auto p-0 sm:p-6">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Client</TableHead>
-                <TableHead>Key</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Devices</TableHead>
-                <TableHead>Expires</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {licenses.map(l => {
-                const used = devices.filter(d => d.license_id === l.id).length;
-                return (
-                  <TableRow key={l.id}>
-                    <TableCell className="font-medium">{l.client_name}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <code className="text-xs font-mono">{l.key_value}</code>
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => copy(l.key_value)}>
+        <CardHeader className="px-4 sm:px-6"><CardTitle className="text-base sm:text-lg">All licenses ({licenses.length})</CardTitle></CardHeader>
+        <CardContent className="px-0 sm:px-6">
+          {/* Mobile cards */}
+          <div className="md:hidden divide-y">
+            {licenses.map(l => {
+              const used = devices.filter(d => d.license_id === l.id).length;
+              return (
+                <div key={l.id} className="px-4 py-3 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-medium truncate">{l.client_name}</p>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <code className="text-xs font-mono text-muted-foreground truncate">{l.key_value}</code>
+                        <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0" onClick={() => copy(l.key_value)}>
                           <Copy className="h-3 w-3" />
                         </Button>
                       </div>
-                    </TableCell>
-                    <TableCell><Badge variant={l.role === "admin" ? "default" : "secondary"}>{l.role}</Badge></TableCell>
-                    <TableCell>
-                      <button className="hover:underline" onClick={() => setShowDevicesFor(l)}>
+                    </div>
+                    {l.revoked ? <Badge variant="destructive" className="shrink-0">Revoked</Badge>
+                      : isExpired(l) ? <Badge variant="destructive" className="shrink-0">Expired</Badge>
+                      : <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 shrink-0">Active</Badge>}
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-xs">
+                    <div>
+                      <p className="text-muted-foreground">Role</p>
+                      <p className="font-medium capitalize">{l.role}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Devices</p>
+                      <button className="font-medium hover:underline" onClick={() => setShowDevicesFor(l)}>
                         {used} / {l.device_limit}
                       </button>
-                    </TableCell>
-                    <TableCell className="text-xs">
-                      {l.expires_at ? format(new Date(l.expires_at), "PP") : "Never"}
-                    </TableCell>
-                    <TableCell>
-                      {l.revoked ? <Badge variant="destructive">Revoked</Badge>
-                        : isExpired(l) ? <Badge variant="destructive">Expired</Badge>
-                        : <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">Active</Badge>}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button size="icon" variant="ghost" onClick={() => { setRenewFor(l); setRenewDays(365); }} title="Renew / extend">
-                        <CalendarPlus className="h-4 w-4 text-primary" />
-                      </Button>
-                      <Button size="icon" variant="ghost" onClick={() => toggleRevoke(l)} title={l.revoked ? "Re-enable" : "Revoke"}>
-                        {l.revoked ? <RotateCcw className="h-4 w-4" /> : <Ban className="h-4 w-4" />}
-                      </Button>
-                      <Button size="icon" variant="ghost" onClick={() => remove(l)} title="Delete">
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-              {licenses.length === 0 && (
-                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No licenses yet</TableCell></TableRow>
-              )}
-            </TableBody>
-          </Table>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Expires</p>
+                      <p className="font-medium">{l.expires_at ? format(new Date(l.expires_at), "PP") : "Never"}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-1 pt-1 -mx-1">
+                    <Button size="sm" variant="ghost" onClick={() => { setRenewFor(l); setRenewDays(365); }}>
+                      <CalendarPlus className="h-4 w-4 mr-1 text-primary" /> Renew
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => toggleRevoke(l)}>
+                      {l.revoked ? <><RotateCcw className="h-4 w-4 mr-1" /> Re-enable</> : <><Ban className="h-4 w-4 mr-1" /> Revoke</>}
+                    </Button>
+                    <Button size="icon" variant="ghost" onClick={() => remove(l)} className="ml-auto">
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+            {licenses.length === 0 && (
+              <div className="text-center text-muted-foreground py-8 text-sm">No licenses yet</div>
+            )}
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden md:block overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Client</TableHead>
+                  <TableHead>Key</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Devices</TableHead>
+                  <TableHead>Expires</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {licenses.map(l => {
+                  const used = devices.filter(d => d.license_id === l.id).length;
+                  return (
+                    <TableRow key={l.id}>
+                      <TableCell className="font-medium">{l.client_name}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <code className="text-xs font-mono">{l.key_value}</code>
+                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => copy(l.key_value)}>
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                      <TableCell><Badge variant={l.role === "admin" ? "default" : "secondary"}>{l.role}</Badge></TableCell>
+                      <TableCell>
+                        <button className="hover:underline" onClick={() => setShowDevicesFor(l)}>
+                          {used} / {l.device_limit}
+                        </button>
+                      </TableCell>
+                      <TableCell className="text-xs whitespace-nowrap">
+                        {l.expires_at ? format(new Date(l.expires_at), "PP") : "Never"}
+                      </TableCell>
+                      <TableCell>
+                        {l.revoked ? <Badge variant="destructive">Revoked</Badge>
+                          : isExpired(l) ? <Badge variant="destructive">Expired</Badge>
+                          : <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">Active</Badge>}
+                      </TableCell>
+                      <TableCell className="text-right whitespace-nowrap">
+                        <Button size="icon" variant="ghost" onClick={() => { setRenewFor(l); setRenewDays(365); }} title="Renew / extend">
+                          <CalendarPlus className="h-4 w-4 text-primary" />
+                        </Button>
+                        <Button size="icon" variant="ghost" onClick={() => toggleRevoke(l)} title={l.revoked ? "Re-enable" : "Revoke"}>
+                          {l.revoked ? <RotateCcw className="h-4 w-4" /> : <Ban className="h-4 w-4" />}
+                        </Button>
+                        <Button size="icon" variant="ghost" onClick={() => remove(l)} title="Delete">
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                {licenses.length === 0 && (
+                  <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No licenses yet</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 
