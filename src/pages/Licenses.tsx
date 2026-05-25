@@ -235,6 +235,9 @@ const Licenses = () => {
                         : <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">Active</Badge>}
                     </TableCell>
                     <TableCell className="text-right">
+                      <Button size="icon" variant="ghost" onClick={() => { setRenewFor(l); setRenewDays(365); }} title="Renew / extend">
+                        <CalendarPlus className="h-4 w-4 text-primary" />
+                      </Button>
                       <Button size="icon" variant="ghost" onClick={() => toggleRevoke(l)} title={l.revoked ? "Re-enable" : "Revoke"}>
                         {l.revoked ? <RotateCcw className="h-4 w-4" /> : <Ban className="h-4 w-4" />}
                       </Button>
