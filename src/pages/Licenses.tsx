@@ -279,6 +279,53 @@ const Licenses = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!renewFor} onOpenChange={(o) => !o && setRenewFor(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CalendarPlus className="h-5 w-5 text-primary" /> Renew license — {renewFor?.client_name}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 text-sm">
+            <div className="rounded-lg bg-muted/50 p-3 space-y-1">
+              <p><span className="text-muted-foreground">Current expiry:</span>{" "}
+                <span className="font-medium">
+                  {renewFor?.expires_at ? format(new Date(renewFor.expires_at), "PP") : "Never"}
+                </span>
+              </p>
+              {renewFor?.expires_at && (
+                <p className="text-xs text-muted-foreground">
+                  {new Date(renewFor.expires_at) > new Date()
+                    ? "Extension will be added on top of the current expiry."
+                    : "License has expired — new period starts today."}
+                </p>
+              )}
+            </div>
+            <div className="space-y-1">
+              <Label>Extend by (days)</Label>
+              <Input type="number" min={1} value={renewDays}
+                onChange={e => setRenewDays(parseInt(e.target.value) || 0)} />
+              <div className="flex gap-2 pt-1 flex-wrap">
+                {[30, 90, 180, 365, 730].map(d => (
+                  <Button key={d} size="sm" variant="outline" onClick={() => setRenewDays(d)}>
+                    {d >= 365 ? `${d / 365}y` : `${d}d`}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              The same license key, devices, products, sales and quotations are kept — nothing is lost.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setRenewFor(null)}>Cancel</Button>
+            <Button onClick={renew} disabled={renewBusy || renewDays < 1}>
+              {renewBusy ? "Renewing..." : "Renew license"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
