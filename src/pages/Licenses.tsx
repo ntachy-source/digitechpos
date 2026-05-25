@@ -139,16 +139,16 @@ const Licenses = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap gap-4 items-center justify-between">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
-            <KeyRound className="h-7 w-7 text-primary" /> License Keys
+      <div className="flex flex-wrap gap-3 items-start sm:items-center justify-between">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold flex items-center gap-2">
+            <KeyRound className="h-6 w-6 sm:h-7 sm:w-7 text-primary shrink-0" /> License Keys
           </h1>
-          <p className="text-muted-foreground mt-1 text-sm">Generate and manage access keys for clients.</p>
+          <p className="text-muted-foreground mt-1 text-xs sm:text-sm">Generate and manage access keys for clients.</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button><Plus className="h-4 w-4 mr-2" /> Generate Key</Button>
+            <Button className="w-full sm:w-auto"><Plus className="h-4 w-4 mr-2" /> Generate Key</Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>Generate new license key</DialogTitle></DialogHeader>
