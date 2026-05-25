@@ -44,6 +44,31 @@ const Licenses = () => {
     notes: "",
   });
   const [showDevicesFor, setShowDevicesFor] = useState<License | null>(null);
+  const [renewFor, setRenewFor] = useState<License | null>(null);
+  const [renewDays, setRenewDays] = useState(365);
+  const [renewBusy, setRenewBusy] = useState(false);
+
+  const renew = async () => {
+    if (!renewFor) return;
+    const days = Math.max(1, renewDays | 0);
+    // Extend from current expiry if still in the future, otherwise from now.
+    const base = renewFor.expires_at && new Date(renewFor.expires_at) > new Date()
+      ? new Date(renewFor.expires_at)
+      : new Date();
+    const newExpiry = new Date(base.getTime() + days * 86400_000).toISOString();
+    setRenewBusy(true);
+    try {
+      const { error } = await supabase.from("license_keys")
+        .update({ expires_at: newExpiry, revoked: false })
+        .eq("id", renewFor.id);
+      if (error) throw error;
+      toast.success(`Renewed — valid until ${format(new Date(newExpiry), "PP")}. All data preserved.`);
+      setRenewFor(null);
+      setRenewDays(365);
+      load();
+    } catch (e: any) { toast.error(e.message); }
+    finally { setRenewBusy(false); }
+  };
 
   useEffect(() => { document.title = "Licenses · SGH POS"; load(); }, []);
 
