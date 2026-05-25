@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { KeyRound, Plus, Trash2, Copy, Ban, RotateCcw, Smartphone } from "lucide-react";
+import { KeyRound, Plus, Trash2, Copy, Ban, RotateCcw, Smartphone, CalendarPlus } from "lucide-react";
 import { format } from "date-fns";
 
 interface License {
