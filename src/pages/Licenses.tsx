@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { KeyRound, Plus, Trash2, Copy, Ban, RotateCcw, Smartphone } from "lucide-react";
+import { KeyRound, Plus, Trash2, Copy, Ban, RotateCcw, Smartphone, CalendarPlus } from "lucide-react";
 import { format } from "date-fns";
 
 interface License {
@@ -44,6 +44,31 @@ const Licenses = () => {
     notes: "",
   });
   const [showDevicesFor, setShowDevicesFor] = useState<License | null>(null);
+  const [renewFor, setRenewFor] = useState<License | null>(null);
+  const [renewDays, setRenewDays] = useState(365);
+  const [renewBusy, setRenewBusy] = useState(false);
+
+  const renew = async () => {
+    if (!renewFor) return;
+    const days = Math.max(1, renewDays | 0);
+    // Extend from current expiry if still in the future, otherwise from now.
+    const base = renewFor.expires_at && new Date(renewFor.expires_at) > new Date()
+      ? new Date(renewFor.expires_at)
+      : new Date();
+    const newExpiry = new Date(base.getTime() + days * 86400_000).toISOString();
+    setRenewBusy(true);
+    try {
+      const { error } = await supabase.from("license_keys")
+        .update({ expires_at: newExpiry, revoked: false })
+        .eq("id", renewFor.id);
+      if (error) throw error;
+      toast.success(`Renewed — valid until ${format(new Date(newExpiry), "PP")}. All data preserved.`);
+      setRenewFor(null);
+      setRenewDays(365);
+      load();
+    } catch (e: any) { toast.error(e.message); }
+    finally { setRenewBusy(false); }
+  };
 
   useEffect(() => { document.title = "Licenses · SGH POS"; load(); }, []);
 
@@ -210,6 +235,9 @@ const Licenses = () => {
                         : <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">Active</Badge>}
                     </TableCell>
                     <TableCell className="text-right">
+                      <Button size="icon" variant="ghost" onClick={() => { setRenewFor(l); setRenewDays(365); }} title="Renew / extend">
+                        <CalendarPlus className="h-4 w-4 text-primary" />
+                      </Button>
                       <Button size="icon" variant="ghost" onClick={() => toggleRevoke(l)} title={l.revoked ? "Re-enable" : "Revoke"}>
                         {l.revoked ? <RotateCcw className="h-4 w-4" /> : <Ban className="h-4 w-4" />}
                       </Button>
@@ -249,6 +277,53 @@ const Licenses = () => {
               <p className="text-sm text-muted-foreground text-center py-4">No devices activated yet</p>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!renewFor} onOpenChange={(o) => !o && setRenewFor(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CalendarPlus className="h-5 w-5 text-primary" /> Renew license — {renewFor?.client_name}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 text-sm">
+            <div className="rounded-lg bg-muted/50 p-3 space-y-1">
+              <p><span className="text-muted-foreground">Current expiry:</span>{" "}
+                <span className="font-medium">
+                  {renewFor?.expires_at ? format(new Date(renewFor.expires_at), "PP") : "Never"}
+                </span>
+              </p>
+              {renewFor?.expires_at && (
+                <p className="text-xs text-muted-foreground">
+                  {new Date(renewFor.expires_at) > new Date()
+                    ? "Extension will be added on top of the current expiry."
+                    : "License has expired — new period starts today."}
+                </p>
+              )}
+            </div>
+            <div className="space-y-1">
+              <Label>Extend by (days)</Label>
+              <Input type="number" min={1} value={renewDays}
+                onChange={e => setRenewDays(parseInt(e.target.value) || 0)} />
+              <div className="flex gap-2 pt-1 flex-wrap">
+                {[30, 90, 180, 365, 730].map(d => (
+                  <Button key={d} size="sm" variant="outline" onClick={() => setRenewDays(d)}>
+                    {d >= 365 ? `${d / 365}y` : `${d}d`}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              The same license key, devices, products, sales and quotations are kept — nothing is lost.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setRenewFor(null)}>Cancel</Button>
+            <Button onClick={renew} disabled={renewBusy || renewDays < 1}>
+              {renewBusy ? "Renewing..." : "Renew license"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

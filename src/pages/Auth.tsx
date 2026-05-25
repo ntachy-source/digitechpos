@@ -48,7 +48,15 @@ const Auth = () => {
       if (signErr) throw signErr;
       toast.success(`Welcome, ${client_name}!`);
     } catch (err: any) {
-      toast.error(err?.message ?? "Activation failed");
+      const msg = err?.message ?? "Activation failed";
+      if (/expired/i.test(msg)) {
+        toast.error("License expired", {
+          description: "Ask your administrator to renew this key — all your products, sales and quotations will be preserved.",
+          duration: 8000,
+        });
+      } else {
+        toast.error(msg);
+      }
     } finally {
       setBusy(false);
     }
