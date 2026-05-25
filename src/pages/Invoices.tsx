@@ -169,14 +169,14 @@ const Invoices = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
-            <FileText className="h-7 w-7 text-primary" /> Invoices
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold flex items-center gap-2">
+            <FileText className="h-6 w-6 sm:h-7 sm:w-7 text-primary shrink-0" /> Invoices
           </h1>
-          <p className="text-muted-foreground mt-1 text-sm">Generate professional invoices from completed sales.</p>
+          <p className="text-muted-foreground mt-1 text-xs sm:text-sm">Generate professional invoices from completed sales.</p>
         </div>
-        <Button onClick={() => setOpen(true)}><Plus className="h-4 w-4 mr-2" /> New Invoice</Button>
+        <Button onClick={() => setOpen(true)} className="w-full sm:w-auto"><Plus className="h-4 w-4 mr-2" /> New Invoice</Button>
       </div>
 
       <Card>
