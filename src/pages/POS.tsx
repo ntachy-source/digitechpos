@@ -146,16 +146,35 @@ const POS = () => {
             <div className="space-y-2 max-h-72 overflow-auto">
               {cart.length === 0 && <p className="text-sm text-muted-foreground text-center py-6">No items yet</p>}
               {cart.map(item => (
-                <div key={item.id} className="flex items-center justify-between p-3 rounded-lg border bg-secondary/30">
-                  <div className="min-w-0">
-                    <p className="font-medium truncate">{item.brand} {item.model}</p>
-                    <p className="text-xs font-mono text-muted-foreground truncate">{item.imei_serial}</p>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Badge variant="outline">${Number(item.sale_price).toFixed(2)}</Badge>
+                <div key={item.id} className="p-3 rounded-lg border bg-secondary/30 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-medium truncate">{item.brand} {item.model}</p>
+                      <p className="text-xs font-mono text-muted-foreground truncate">{item.imei_serial}</p>
+                      <p className="text-xs text-muted-foreground">${Number(item.sale_price).toFixed(2)} each · {item.stock} in stock</p>
+                    </div>
                     <Button size="icon" variant="ghost" onClick={() => setCart(cart.filter(c => c.id !== item.id))}>
                       <X className="h-4 w-4" />
                     </Button>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1">
+                      <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => updateQty(item.id, -1)} disabled={item.quantity <= 1}>
+                        <Minus className="h-3 w-3" />
+                      </Button>
+                      <Input
+                        type="number"
+                        min={1}
+                        max={item.stock}
+                        value={item.quantity}
+                        onChange={e => setQty(item.id, Number(e.target.value))}
+                        className="h-8 w-16 text-center"
+                      />
+                      <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => updateQty(item.id, 1)} disabled={item.quantity >= item.stock}>
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    <Badge variant="outline" className="font-semibold">${(Number(item.sale_price) * item.quantity).toFixed(2)}</Badge>
                   </div>
                 </div>
               ))}
