@@ -481,6 +481,15 @@ export type Database = {
             }
             Returns: string
           }
+      process_sale_qty: {
+        Args: {
+          _customer_address?: string
+          _customer_name: string
+          _customer_phone: string
+          _items: Json
+        }
+        Returns: string
+      }
     }
     Enums: {
       app_role: "admin" | "staff"
