@@ -5,13 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { ScanLine, X, CheckCircle2, Camera, Keyboard } from "lucide-react";
+import { ScanLine, X, CheckCircle2, Camera, Keyboard, Minus, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { parseQrPayload } from "@/lib/qr";
 import { QrScanner } from "@/components/QrScanner";
 import { ReceiptDialog, type ReceiptData } from "@/components/ReceiptDialog";
 
-interface CartItem { id: string; brand: string; model: string; imei_serial: string; sale_price: number; }
+interface CartItem { id: string; brand: string; model: string; imei_serial: string; sale_price: number; quantity: number; stock: number; }
 
 const POS = () => {
   const [scanning, setScanning] = useState(false);
@@ -23,25 +23,46 @@ const POS = () => {
   const [busy, setBusy] = useState(false);
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
 
-  const total = cart.reduce((s, i) => s + Number(i.sale_price), 0);
+  const total = cart.reduce((s, i) => s + Number(i.sale_price) * i.quantity, 0);
 
   const lookupAndAdd = async (raw: string) => {
     const id = parseQrPayload(raw);
     if (!id) return;
-    if (cart.some(c => c.imei_serial === id)) {
-      toast.info("Already in cart");
+    const existing = cart.find(c => c.imei_serial === id);
+    if (existing) {
+      if (existing.quantity >= existing.stock) { toast.info("No more stock available"); return; }
+      setCart(prev => prev.map(c => c.id === existing.id ? { ...c, quantity: c.quantity + 1 } : c));
+      toast.success(`Added another: ${existing.brand} ${existing.model}`);
       return;
     }
     const { data, error } = await supabase
       .from("products")
-      .select("id, brand, model, imei_serial, sale_price, status")
+      .select("id, brand, model, imei_serial, sale_price, status, quantity")
       .eq("imei_serial", id)
       .maybeSingle();
     if (error) return toast.error(error.message);
     if (!data) return toast.error("Product not found");
     if (data.status !== "in_stock") return toast.error("Product is not available");
-    setCart(prev => [...prev, data as CartItem]);
+    setCart(prev => [...prev, { ...(data as any), quantity: 1, stock: (data as any).quantity ?? 1 }]);
     toast.success(`Added: ${data.brand} ${data.model}`);
+  };
+
+  const updateQty = (id: string, delta: number) => {
+    setCart(prev => prev.map(c => {
+      if (c.id !== id) return c;
+      const next = c.quantity + delta;
+      if (next < 1) return c;
+      if (next > c.stock) { toast.info(`Only ${c.stock} in stock`); return c; }
+      return { ...c, quantity: next };
+    }));
+  };
+
+  const setQty = (id: string, value: number) => {
+    setCart(prev => prev.map(c => {
+      if (c.id !== id) return c;
+      const n = Math.max(1, Math.min(c.stock, Math.floor(value) || 1));
+      return { ...c, quantity: n };
+    }));
   };
 
   const handleManual = (e: React.FormEvent) => {
@@ -52,15 +73,17 @@ const POS = () => {
   const checkout = async () => {
     if (cart.length === 0) return toast.error("Cart is empty");
     setBusy(true);
-    const snapshotItems = cart.map(c => ({
-      brand: c.brand, model: c.model, imei_serial: c.imei_serial, sale_price: Number(c.sale_price),
-    }));
+    const snapshotItems = cart.flatMap(c =>
+      Array.from({ length: c.quantity }, () => ({
+        brand: c.brand, model: c.model, imei_serial: c.imei_serial, sale_price: Number(c.sale_price),
+      }))
+    );
     const snapshotTotal = total;
     const snapshotName = customerName;
     const snapshotPhone = customerPhone;
     const snapshotAddress = customerAddress;
-    const { data, error } = await supabase.rpc("process_sale", {
-      _product_ids: cart.map(c => c.id),
+    const { data, error } = await supabase.rpc("process_sale_qty" as any, {
+      _items: cart.map(c => ({ product_id: c.id, quantity: c.quantity })),
       _customer_name: customerName || null,
       _customer_phone: customerPhone || null,
       _customer_address: customerAddress || null,
