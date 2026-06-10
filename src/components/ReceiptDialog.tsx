@@ -1,7 +1,17 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Printer } from "lucide-react";
-import { useRef } from "react";
+import { Printer, Usb, Plug } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
+import {
+  buildEscPos,
+  forgetPrinter,
+  getPairedPrinter,
+  getPairedPrinterInfo,
+  isWebUsbSupported,
+  pickPrinter,
+  printViaUsb,
+} from "@/lib/printer";
 
 export interface ReceiptData {
   saleId: string;
@@ -75,6 +85,15 @@ const buildReceiptHtml = (receipt: ReceiptData) => {
 
 export const ReceiptDialog = ({ open, onOpenChange, receipt }: Props) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [pairedName, setPairedName] = useState<string | null>(null);
+  const [printing, setPrinting] = useState(false);
+  const webUsb = isWebUsbSupported();
+
+  useEffect(() => {
+    if (!open) return;
+    const info = getPairedPrinterInfo();
+    setPairedName(info?.name ?? null);
+  }, [open]);
 
   const printViaIframe = () => {
     if (!receipt) return;
@@ -86,34 +105,62 @@ export const ReceiptDialog = ({ open, onOpenChange, receipt }: Props) => {
     doc.write(buildReceiptHtml(receipt));
     doc.close();
     setTimeout(() => {
-      try {
-        iframe.contentWindow?.focus();
-        iframe.contentWindow?.print();
-      } catch (e) {
-        console.error("Print failed", e);
-      }
+      try { iframe.contentWindow?.focus(); iframe.contentWindow?.print(); }
+      catch (e) { console.error("Print failed", e); }
     }, 300);
   };
 
   const printViaWindow = () => {
     if (!receipt) return;
     const w = window.open("", "_blank");
-    if (!w) {
-      // Popup blocked — fallback to iframe
-      printViaIframe();
-      return;
-    }
+    if (!w) { printViaIframe(); return; }
     w.document.open();
     w.document.write(buildReceiptHtml(receipt));
     w.document.close();
   };
 
-  const handlePrint = () => {
-    // Try popup first (better for thermal printers), fallback to iframe
+  const handleBrowserPrint = () => {
+    try { printViaWindow(); } catch { printViaIframe(); }
+  };
+
+  const handleConnectPrinter = async () => {
     try {
-      printViaWindow();
-    } catch {
-      printViaIframe();
+      const device = await pickPrinter();
+      setPairedName(device.productName || "Printer");
+      toast.success(`Connected: ${device.productName || "Printer"}`);
+    } catch (e: any) {
+      if (e?.name === "NotFoundError") return; // user cancelled
+      toast.error(e?.message || "Failed to connect printer");
+    }
+  };
+
+  const handleForget = () => {
+    forgetPrinter();
+    setPairedName(null);
+    toast.success("Printer disconnected");
+  };
+
+  const handleThermalPrint = async () => {
+    if (!receipt) return;
+    setPrinting(true);
+    try {
+      let device = await getPairedPrinter();
+      if (!device) device = await pickPrinter();
+      await printViaUsb(device, buildEscPos({
+        saleId: receipt.saleId,
+        createdAt: receipt.createdAt,
+        customerName: receipt.customerName,
+        customerPhone: receipt.customerPhone,
+        customerAddress: receipt.customerAddress,
+        items: receipt.items,
+        total: receipt.total,
+      }));
+      setPairedName(device.productName || "Printer");
+      toast.success("Receipt sent to printer");
+    } catch (e: any) {
+      toast.error(e?.message || "Print failed");
+    } finally {
+      setPrinting(false);
     }
   };
 
@@ -142,15 +189,50 @@ export const ReceiptDialog = ({ open, onOpenChange, receipt }: Props) => {
             <div className="flex justify-between text-lg font-bold pt-2 border-t">
               <span>Total</span><span>${receipt.total.toFixed(2)}</span>
             </div>
-            <Button onClick={handlePrint} className="w-full">
-              <Printer className="h-4 w-4 mr-2" /> Print Receipt
+
+            {/* Printer connection */}
+            <div className="rounded-lg border p-3 space-y-2 bg-secondary/30">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <Usb className="h-4 w-4 text-primary" />
+                  <span className="font-medium">Thermal Printer</span>
+                </div>
+                {pairedName ? (
+                  <span className="text-xs text-green-600 dark:text-green-400">● {pairedName}</span>
+                ) : (
+                  <span className="text-xs text-muted-foreground">Not connected</span>
+                )}
+              </div>
+              {webUsb ? (
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" className="flex-1" onClick={handleConnectPrinter}>
+                    <Plug className="h-3 w-3 mr-1" /> {pairedName ? "Change" : "Connect Printer"}
+                  </Button>
+                  {pairedName && (
+                    <Button size="sm" variant="ghost" onClick={handleForget}>Forget</Button>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Direct printer connection requires Chrome or Edge on desktop/Android. Use the browser print button below instead.
+                </p>
+              )}
+            </div>
+
+            {webUsb && (
+              <Button onClick={handleThermalPrint} className="w-full" disabled={printing}>
+                <Printer className="h-4 w-4 mr-2" />
+                {printing ? "Printing..." : pairedName ? `Print to ${pairedName}` : "Connect & Print"}
+              </Button>
+            )}
+            <Button onClick={handleBrowserPrint} variant={webUsb ? "outline" : "default"} className="w-full">
+              <Printer className="h-4 w-4 mr-2" /> Print via Browser Dialog
             </Button>
             <p className="text-[10px] text-muted-foreground text-center">
-              If nothing happens, allow popups for this site. The receipt will open and trigger your printer dialog.
+              Use "Connect Printer" for direct USB thermal printers (ESC/POS). The browser dialog works for any installed printer.
             </p>
           </div>
         )}
-        {/* Hidden iframe used as a fallback when popups are blocked */}
         <iframe ref={iframeRef} title="receipt-print" style={{ position: "fixed", right: 0, bottom: 0, width: 0, height: 0, border: 0 }} />
       </DialogContent>
     </Dialog>
