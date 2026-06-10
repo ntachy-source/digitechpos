@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Building2, Upload, Image as ImageIcon } from "lucide-react";
+import { Building2, Upload, Image as ImageIcon, Printer, Plug, Usb } from "lucide-react";
 import { getActiveLicenseId } from "@/lib/license";
+import { forgetPrinter, getPairedPrinterInfo, isWebUsbSupported, pickPrinter, printViaUsb, buildEscPos, getPairedPrinter } from "@/lib/printer";
 
 interface Settings {
   id: string;
@@ -24,6 +25,47 @@ const Settings = () => {
   const [s, setS] = useState<Settings | null>(null);
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [pairedName, setPairedName] = useState<string | null>(null);
+  const [testing, setTesting] = useState(false);
+  const webUsb = isWebUsbSupported();
+
+  useEffect(() => {
+    const info = getPairedPrinterInfo();
+    setPairedName(info?.name ?? null);
+  }, []);
+
+  const connectPrinter = async () => {
+    try {
+      const d = await pickPrinter();
+      setPairedName(d.productName || "Printer");
+      toast.success(`Connected: ${d.productName || "Printer"}`);
+    } catch (e: any) {
+      if (e?.name === "NotFoundError") return;
+      toast.error(e?.message || "Failed to connect");
+    }
+  };
+
+  const disconnectPrinter = () => { forgetPrinter(); setPairedName(null); toast.success("Printer disconnected"); };
+
+  const testPrint = async () => {
+    setTesting(true);
+    try {
+      let d = await getPairedPrinter();
+      if (!d) d = await pickPrinter();
+      await printViaUsb(d, buildEscPos({
+        businessName: s?.business_name,
+        saleId: "TEST" + Date.now().toString(36),
+        createdAt: new Date().toISOString(),
+        items: [{ brand: "Test", model: "Print", imei_serial: "TEST-0001", sale_price: 0 }],
+        total: 0,
+        footer: "Printer test successful",
+      }));
+      setPairedName(d.productName || "Printer");
+      toast.success("Test sent to printer");
+    } catch (e: any) {
+      toast.error(e?.message || "Test print failed");
+    } finally { setTesting(false); }
+  };
 
   useEffect(() => { document.title = "Settings · SGH POS"; load(); }, []);
 
