@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Building2, Upload, Image as ImageIcon } from "lucide-react";
+import { Building2, Upload, Image as ImageIcon, Printer, Plug, Usb } from "lucide-react";
 import { getActiveLicenseId } from "@/lib/license";
+import { forgetPrinter, getPairedPrinterInfo, isWebUsbSupported, pickPrinter, printViaUsb, buildEscPos, getPairedPrinter } from "@/lib/printer";
 
 interface Settings {
   id: string;
@@ -24,6 +25,47 @@ const Settings = () => {
   const [s, setS] = useState<Settings | null>(null);
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [pairedName, setPairedName] = useState<string | null>(null);
+  const [testing, setTesting] = useState(false);
+  const webUsb = isWebUsbSupported();
+
+  useEffect(() => {
+    const info = getPairedPrinterInfo();
+    setPairedName(info?.name ?? null);
+  }, []);
+
+  const connectPrinter = async () => {
+    try {
+      const d = await pickPrinter();
+      setPairedName(d.productName || "Printer");
+      toast.success(`Connected: ${d.productName || "Printer"}`);
+    } catch (e: any) {
+      if (e?.name === "NotFoundError") return;
+      toast.error(e?.message || "Failed to connect");
+    }
+  };
+
+  const disconnectPrinter = () => { forgetPrinter(); setPairedName(null); toast.success("Printer disconnected"); };
+
+  const testPrint = async () => {
+    setTesting(true);
+    try {
+      let d = await getPairedPrinter();
+      if (!d) d = await pickPrinter();
+      await printViaUsb(d, buildEscPos({
+        businessName: s?.business_name,
+        saleId: "TEST" + Date.now().toString(36),
+        createdAt: new Date().toISOString(),
+        items: [{ brand: "Test", model: "Print", imei_serial: "TEST-0001", sale_price: 0 }],
+        total: 0,
+        footer: "Printer test successful",
+      }));
+      setPairedName(d.productName || "Printer");
+      toast.success("Test sent to printer");
+    } catch (e: any) {
+      toast.error(e?.message || "Test print failed");
+    } finally { setTesting(false); }
+  };
 
   useEffect(() => { document.title = "Settings · SGH POS"; load(); }, []);
 
@@ -135,6 +177,51 @@ const Settings = () => {
               placeholder="Thank you for your business." />
           </div>
           <Button onClick={save} disabled={busy}>{busy ? "Saving..." : "Save changes"}</Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Printer className="h-5 w-5" /> Receipt Printer</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-center justify-between p-3 rounded-lg border bg-secondary/30">
+            <div className="flex items-center gap-2">
+              <Usb className="h-4 w-4 text-primary" />
+              <div>
+                <div className="text-sm font-medium">{pairedName ? pairedName : "No printer connected"}</div>
+                <div className="text-xs text-muted-foreground">
+                  {pairedName ? "Ready to print receipts directly." : "Connect a USB thermal printer (ESC/POS)."}
+                </div>
+              </div>
+            </div>
+            {pairedName && <span className="h-2 w-2 rounded-full bg-green-500" />}
+          </div>
+
+          {webUsb ? (
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={connectPrinter} variant="outline">
+                <Plug className="h-4 w-4 mr-2" /> {pairedName ? "Change Printer" : "Connect Printer"}
+              </Button>
+              {pairedName && (
+                <>
+                  <Button onClick={testPrint} disabled={testing}>
+                    <Printer className="h-4 w-4 mr-2" /> {testing ? "Printing..." : "Test Print"}
+                  </Button>
+                  <Button onClick={disconnectPrinter} variant="ghost">Disconnect</Button>
+                </>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Direct USB printer connection requires Google Chrome or Microsoft Edge on desktop or Android. On other browsers,
+              receipts can still be printed via the system print dialog from the receipt window.
+            </p>
+          )}
+          <p className="text-xs text-muted-foreground">
+            Supports most 58mm/80mm thermal receipt printers (Epson, Star, Bixolon, Citizen, generic ESC/POS).
+            The browser remembers your printer after the first connection.
+          </p>
         </CardContent>
       </Card>
     </div>
