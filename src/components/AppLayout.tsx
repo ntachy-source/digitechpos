@@ -6,6 +6,7 @@ import { useBusinessName } from "@/hooks/useBusinessName";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "staff"] as const },
@@ -68,6 +69,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
             <p className="text-muted-foreground capitalize">{role}</p>
           </div>
         </div>
+        <ThemeToggle />
         <Button variant="ghost" size="sm" className="w-full justify-start" onClick={handleSignOut}>
           <LogOut className="h-4 w-4 mr-2" /> Sign out
         </Button>
