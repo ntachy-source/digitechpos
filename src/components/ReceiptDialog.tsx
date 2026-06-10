@@ -1,6 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Printer } from "lucide-react";
+import { useRef } from "react";
 
 export interface ReceiptData {
   saleId: string;
@@ -18,53 +19,102 @@ interface Props {
   receipt: ReceiptData | null;
 }
 
+const buildReceiptHtml = (receipt: ReceiptData) => {
+  const date = new Date(receipt.createdAt).toLocaleString();
+  const itemsHtml = receipt.items.map(i => `
+    <tr>
+      <td>
+        <div>${i.brand} ${i.model}</div>
+        <div class="imei">${i.imei_serial}</div>
+      </td>
+      <td class="right">$${Number(i.sale_price).toFixed(2)}</td>
+    </tr>`).join("");
+  return `<!doctype html><html><head><meta charset="utf-8"/><title>Receipt ${receipt.saleId.slice(0,8)}</title>
+    <style>
+      @page { size: 80mm auto; margin: 4mm; }
+      * { box-sizing: border-box; }
+      html,body{margin:0;padding:0;color:#000;background:#fff}
+      body{font-family:'Courier New',monospace;padding:8px;width:80mm;font-size:12px;line-height:1.35}
+      h1{font-size:16px;margin:0 0 2px;text-align:center}
+      .sub{text-align:center;font-size:11px;margin-bottom:8px}
+      hr{border:none;border-top:1px dashed #000;margin:6px 0}
+      table{width:100%;border-collapse:collapse;font-size:12px}
+      td{padding:3px 0;vertical-align:top}
+      .right{text-align:right;white-space:nowrap}
+      .imei{font-size:10px;color:#333}
+      .total{font-size:14px;font-weight:700;display:flex;justify-content:space-between;margin-top:6px}
+      .meta{font-size:11px;margin-bottom:6px}
+      .foot{text-align:center;font-size:11px;margin-top:10px}
+      @media print { .noprint { display: none !important; } body { width: auto; } }
+    </style></head>
+    <body>
+      <h1>SGH POS</h1>
+      <div class="sub">Sales Receipt</div>
+      <div class="meta">
+        <div>Receipt #: ${receipt.saleId.slice(0,8).toUpperCase()}</div>
+        <div>Date: ${date}</div>
+        ${receipt.customerName ? `<div>Customer: ${receipt.customerName}</div>` : ""}
+        ${receipt.customerPhone ? `<div>Phone: ${receipt.customerPhone}</div>` : ""}
+        ${receipt.customerAddress ? `<div>Address: ${receipt.customerAddress}</div>` : ""}
+      </div>
+      <hr/>
+      <table>${itemsHtml}</table>
+      <hr/>
+      <div class="total"><span>TOTAL</span><span>$${receipt.total.toFixed(2)}</span></div>
+      <div class="foot">Thank you for your purchase!</div>
+      <div class="noprint" style="margin-top:16px;text-align:center">
+        <button onclick="window.print()" style="padding:8px 16px;font-size:14px;cursor:pointer">Print</button>
+      </div>
+      <script>
+        window.addEventListener('load', function(){
+          setTimeout(function(){ try { window.focus(); window.print(); } catch(e){} }, 250);
+        });
+      </script>
+    </body></html>`;
+};
+
 export const ReceiptDialog = ({ open, onOpenChange, receipt }: Props) => {
-  const handlePrint = () => {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  const printViaIframe = () => {
     if (!receipt) return;
-    const w = window.open("", "_blank", "width=380,height=640");
-    if (!w) return;
-    const date = new Date(receipt.createdAt).toLocaleString();
-    const itemsHtml = receipt.items.map(i => `
-      <tr>
-        <td>
-          <div>${i.brand} ${i.model}</div>
-          <div class="imei">${i.imei_serial}</div>
-        </td>
-        <td class="right">$${Number(i.sale_price).toFixed(2)}</td>
-      </tr>`).join("");
-    w.document.write(`
-      <html><head><title>Receipt ${receipt.saleId.slice(0, 8)}</title>
-      <style>
-        body{font-family:system-ui,monospace;padding:16px;max-width:320px;margin:0 auto;color:#000}
-        h1{font-size:18px;margin:0 0 4px;text-align:center}
-        .sub{text-align:center;font-size:12px;color:#444;margin-bottom:12px}
-        hr{border:none;border-top:1px dashed #999;margin:8px 0}
-        table{width:100%;border-collapse:collapse;font-size:12px}
-        td{padding:4px 0;vertical-align:top}
-        .right{text-align:right;white-space:nowrap}
-        .imei{font-family:monospace;font-size:10px;color:#666}
-        .total{font-size:16px;font-weight:700;display:flex;justify-content:space-between;margin-top:8px}
-        .meta{font-size:11px;color:#444;margin-bottom:8px}
-        .foot{text-align:center;font-size:11px;color:#444;margin-top:12px}
-      </style></head>
-      <body onload="window.print();setTimeout(()=>window.close(),300)">
-        <h1>SGH POS</h1>
-        <div class="sub">Sales Receipt</div>
-        <div class="meta">
-          <div>Receipt #: ${receipt.saleId.slice(0, 8).toUpperCase()}</div>
-          <div>Date: ${date}</div>
-          ${receipt.customerName ? `<div>Customer: ${receipt.customerName}</div>` : ""}
-          ${receipt.customerPhone ? `<div>Phone: ${receipt.customerPhone}</div>` : ""}
-          ${receipt.customerAddress ? `<div>Address: ${receipt.customerAddress}</div>` : ""}
-        </div>
-        <hr/>
-        <table>${itemsHtml}</table>
-        <hr/>
-        <div class="total"><span>TOTAL</span><span>$${receipt.total.toFixed(2)}</span></div>
-        <div class="foot">Thank you for your purchase!</div>
-      </body></html>
-    `);
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!doc) return;
+    doc.open();
+    doc.write(buildReceiptHtml(receipt));
+    doc.close();
+    setTimeout(() => {
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      } catch (e) {
+        console.error("Print failed", e);
+      }
+    }, 300);
+  };
+
+  const printViaWindow = () => {
+    if (!receipt) return;
+    const w = window.open("", "_blank");
+    if (!w) {
+      // Popup blocked — fallback to iframe
+      printViaIframe();
+      return;
+    }
+    w.document.open();
+    w.document.write(buildReceiptHtml(receipt));
     w.document.close();
+  };
+
+  const handlePrint = () => {
+    // Try popup first (better for thermal printers), fallback to iframe
+    try {
+      printViaWindow();
+    } catch {
+      printViaIframe();
+    }
   };
 
   return (
@@ -95,8 +145,13 @@ export const ReceiptDialog = ({ open, onOpenChange, receipt }: Props) => {
             <Button onClick={handlePrint} className="w-full">
               <Printer className="h-4 w-4 mr-2" /> Print Receipt
             </Button>
+            <p className="text-[10px] text-muted-foreground text-center">
+              If nothing happens, allow popups for this site. The receipt will open and trigger your printer dialog.
+            </p>
           </div>
         )}
+        {/* Hidden iframe used as a fallback when popups are blocked */}
+        <iframe ref={iframeRef} title="receipt-print" style={{ position: "fixed", right: 0, bottom: 0, width: 0, height: 0, border: 0 }} />
       </DialogContent>
     </Dialog>
   );
