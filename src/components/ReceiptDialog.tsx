@@ -126,6 +126,7 @@ const buildReceiptHtml = (receipt: ReceiptData, biz: BusinessInfo) => {
       ${biz.invoice_footer ? `<div class="foot">${escapeHtml(biz.invoice_footer)}</div>` : ""}
       <div class="foot">Goods sold are not returnable.<br/>Keep this receipt for warranty claims.</div>
       <div class="barcode">*${receipt.saleId.slice(0, 8).toUpperCase()}*</div>
+      </div>
     </body></html>`;
 };
 
