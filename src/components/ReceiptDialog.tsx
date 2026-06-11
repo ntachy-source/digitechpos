@@ -62,31 +62,36 @@ const buildReceiptHtml = (receipt: ReceiptData, biz: BusinessInfo) => {
 
   return `<!doctype html><html><head><meta charset="utf-8"/><title>Receipt ${receipt.saleId.slice(0, 8)}</title>
     <style>
-      @page { size: 80mm auto; margin: 3mm; }
+      @page { size: auto; margin: 4mm; }
       * { box-sizing: border-box; }
       html,body{margin:0;padding:0;color:#000;background:#fff}
-      body{font-family:'Courier New',monospace;padding:6px;width:80mm;font-size:12px;line-height:1.4}
+      body{font-family:'Courier New',monospace;padding:0;width:100%;font-size:13pt;line-height:1.35}
+      .wrap{width:100%;max-width:100%;margin:0 auto}
       .center{text-align:center}
-      .logo{max-height:60px;max-width:100%;margin:0 auto 4px;display:block;object-fit:contain}
-      .biz-name{font-size:17px;font-weight:800;letter-spacing:.5px;margin:0}
-      .biz-line{font-size:11px;margin:1px 0}
+      .logo{max-height:80px;max-width:60%;margin:0 auto 6px;display:block;object-fit:contain}
+      .biz-name{font-size:20pt;font-weight:800;letter-spacing:.5px;margin:0}
+      .biz-line{font-size:11pt;margin:1px 0}
       hr{border:none;border-top:1px dashed #000;margin:6px 0}
       .double{border-top:2px solid #000;margin:6px 0}
-      .meta{font-size:11px}
+      .meta{font-size:11pt}
       .meta div{display:flex;justify-content:space-between;gap:8px}
-      table{width:100%;border-collapse:collapse;font-size:12px}
+      table{width:100%;border-collapse:collapse;font-size:12pt}
       td{padding:3px 0;vertical-align:top}
       .right{text-align:right;white-space:nowrap}
       .item-name{font-weight:700}
-      .imei{font-size:10px;color:#222}
-      .totals{font-size:12px}
+      .imei{font-size:10pt;color:#222}
+      .totals{font-size:12pt}
       .totals div{display:flex;justify-content:space-between;padding:2px 0}
-      .grand{font-size:15px;font-weight:800;border-top:1px dashed #000;border-bottom:1px dashed #000;padding:4px 0;margin-top:2px}
-      .foot{text-align:center;font-size:11px;margin-top:8px}
-      .thanks{font-weight:700;font-size:13px;margin-top:6px}
-      .barcode{text-align:center;font-family:'Libre Barcode 39',monospace;font-size:11px;margin-top:6px;letter-spacing:1px}
+      .grand{font-size:16pt;font-weight:800;border-top:1px dashed #000;border-bottom:1px dashed #000;padding:5px 0;margin-top:2px}
+      .foot{text-align:center;font-size:10pt;margin-top:8px}
+      .thanks{font-weight:700;font-size:13pt;margin-top:6px}
+      .barcode{text-align:center;font-family:'Libre Barcode 39',monospace;font-size:11pt;margin-top:6px;letter-spacing:1px}
+      @media print {
+        html,body{width:100%}
+        body{font-size:13pt}
+      }
     </style></head>
-    <body>
+    <body><div class="wrap">
       ${biz.logo_url ? `<img src="${escapeHtml(biz.logo_url)}" class="logo" alt="logo"/>` : ""}
       <div class="center">
         <p class="biz-name">${escapeHtml(biz.business_name)}</p>
@@ -121,6 +126,7 @@ const buildReceiptHtml = (receipt: ReceiptData, biz: BusinessInfo) => {
       ${biz.invoice_footer ? `<div class="foot">${escapeHtml(biz.invoice_footer)}</div>` : ""}
       <div class="foot">Goods sold are not returnable.<br/>Keep this receipt for warranty claims.</div>
       <div class="barcode">*${receipt.saleId.slice(0, 8).toUpperCase()}*</div>
+      </div>
     </body></html>`;
 };
 
