@@ -6,9 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Building2, Upload, Image as ImageIcon, Printer, Plug, Usb } from "lucide-react";
+import { Building2, Upload, Image as ImageIcon } from "lucide-react";
 import { getActiveLicenseId } from "@/lib/license";
-import { forgetPrinter, getPairedPrinterInfo, isWebUsbSupported, pickPrinter, printViaUsb, buildEscPos, getPairedPrinter } from "@/lib/printer";
 
 interface Settings {
   id: string;
