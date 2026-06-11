@@ -139,50 +139,6 @@ const Settings = () => {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Printer className="h-5 w-5" /> Receipt Printer</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center justify-between p-3 rounded-lg border bg-secondary/30">
-            <div className="flex items-center gap-2">
-              <Usb className="h-4 w-4 text-primary" />
-              <div>
-                <div className="text-sm font-medium">{pairedName ? pairedName : "No printer connected"}</div>
-                <div className="text-xs text-muted-foreground">
-                  {pairedName ? "Ready to print receipts directly." : "Connect a USB thermal printer (ESC/POS)."}
-                </div>
-              </div>
-            </div>
-            {pairedName && <span className="h-2 w-2 rounded-full bg-green-500" />}
-          </div>
-
-          {webUsb ? (
-            <div className="flex flex-wrap gap-2">
-              <Button onClick={connectPrinter} variant="outline">
-                <Plug className="h-4 w-4 mr-2" /> {pairedName ? "Change Printer" : "Connect Printer"}
-              </Button>
-              {pairedName && (
-                <>
-                  <Button onClick={testPrint} disabled={testing}>
-                    <Printer className="h-4 w-4 mr-2" /> {testing ? "Printing..." : "Test Print"}
-                  </Button>
-                  <Button onClick={disconnectPrinter} variant="ghost">Disconnect</Button>
-                </>
-              )}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              Direct USB printer connection requires Google Chrome or Microsoft Edge on desktop or Android. On other browsers,
-              receipts can still be printed via the system print dialog from the receipt window.
-            </p>
-          )}
-          <p className="text-xs text-muted-foreground">
-            Supports most 58mm/80mm thermal receipt printers (Epson, Star, Bixolon, Citizen, generic ESC/POS).
-            The browser remembers your printer after the first connection.
-          </p>
-        </CardContent>
-      </Card>
     </div>
   );
 };
