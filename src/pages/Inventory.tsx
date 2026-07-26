@@ -19,6 +19,7 @@ import { getActiveLicenseId } from "@/lib/license";
 const CATEGORIES = [
   "Mobile Phone",
   "Smart Watch",
+  "Liquor",
   "Tablet",
   "Laptop",
   "Headphones / Earbuds",
