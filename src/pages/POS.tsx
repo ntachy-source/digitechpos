@@ -56,11 +56,57 @@ const POS = () => {
     catch { toast.error("Copy failed"); }
   };
 
-  const filteredStock = stock.filter(p => {
+  // Group identical products (same brand/model/category/price) into a single card
+  type GroupedProduct = {
+    key: string;
+    brand: string;
+    model: string;
+    category: string | null;
+    sale_price: number;
+    totalQty: number;
+    variants: StockProduct[];
+  };
+
+  const grouped: GroupedProduct[] = Object.values(
+    stock.reduce((acc: Record<string, GroupedProduct>, p) => {
+      const key = `${p.brand}|${p.model}|${p.category ?? ""}|${Number(p.sale_price)}`;
+      if (!acc[key]) {
+        acc[key] = {
+          key,
+          brand: p.brand,
+          model: p.model,
+          category: p.category,
+          sale_price: Number(p.sale_price),
+          totalQty: 0,
+          variants: [],
+        };
+      }
+      acc[key].totalQty += Number(p.quantity ?? 0);
+      acc[key].variants.push(p);
+      return acc;
+    }, {})
+  );
+
+  const addFromGroup = (g: GroupedProduct) => {
+    // Find a variant that still has capacity given current cart usage
+    for (const v of g.variants) {
+      const inCart = cart.find(c => c.id === v.id);
+      const used = inCart?.quantity ?? 0;
+      if (used < (v.quantity ?? 0)) {
+        addProduct(v);
+        return;
+      }
+    }
+    toast.info("No more stock available");
+  };
+
+  const filteredGroups = grouped.filter(g => {
     const q = stockSearch.toLowerCase().trim();
     if (!q) return true;
-    return [p.brand, p.model, p.category, p.imei_serial].some(v => v?.toLowerCase().includes(q));
+    return [g.brand, g.model, g.category].some(v => v?.toLowerCase().includes(q))
+      || g.variants.some(v => v.imei_serial.toLowerCase().includes(q));
   });
+
 
   const lookupAndAdd = async (raw: string) => {
     const id = parseQrPayload(raw);
