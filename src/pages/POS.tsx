@@ -23,8 +23,44 @@ const POS = () => {
   const [customerAddress, setCustomerAddress] = useState("");
   const [busy, setBusy] = useState(false);
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
+  const [stock, setStock] = useState<StockProduct[]>([]);
+  const [stockSearch, setStockSearch] = useState("");
 
   const total = cart.reduce((s, i) => s + Number(i.sale_price) * i.quantity, 0);
+
+  const loadStock = async () => {
+    const { data, error } = await supabase
+      .from("products")
+      .select("id, brand, model, category, imei_serial, sale_price, quantity")
+      .eq("status", "in_stock")
+      .order("brand", { ascending: true });
+    if (error) return toast.error(error.message);
+    setStock((data ?? []) as StockProduct[]);
+  };
+
+  useEffect(() => { loadStock(); }, []);
+
+  const addProduct = (p: StockProduct) => {
+    const existing = cart.find(c => c.id === p.id);
+    if (existing) {
+      if (existing.quantity >= existing.stock) { toast.info("No more stock available"); return; }
+      setCart(prev => prev.map(c => c.id === p.id ? { ...c, quantity: c.quantity + 1 } : c));
+    } else {
+      setCart(prev => [...prev, { id: p.id, brand: p.brand, model: p.model, imei_serial: p.imei_serial, sale_price: Number(p.sale_price), quantity: 1, stock: p.quantity ?? 1 }]);
+    }
+    toast.success(`Added: ${p.brand} ${p.model}`);
+  };
+
+  const copyId = async (val: string) => {
+    try { await navigator.clipboard.writeText(val); toast.success("Product ID copied"); }
+    catch { toast.error("Copy failed"); }
+  };
+
+  const filteredStock = stock.filter(p => {
+    const q = stockSearch.toLowerCase().trim();
+    if (!q) return true;
+    return [p.brand, p.model, p.category, p.imei_serial].some(v => v?.toLowerCase().includes(q));
+  });
 
   const lookupAndAdd = async (raw: string) => {
     const id = parseQrPayload(raw);
