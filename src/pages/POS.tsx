@@ -197,7 +197,7 @@ const POS = () => {
       <Card className="border-border/60 shadow-card">
         <CardHeader className="pb-3">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <CardTitle className="flex items-center gap-2"><Package className="h-5 w-5 text-primary" /> Products ({filteredStock.length})</CardTitle>
+            <CardTitle className="flex items-center gap-2"><Package className="h-5 w-5 text-primary" /> Products ({filteredGroups.length})</CardTitle>
             <div className="relative w-full sm:max-w-xs">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input value={stockSearch} onChange={e => setStockSearch(e.target.value)} placeholder="Search brand, model, IMEI..." className="pl-9 h-9" />
@@ -206,40 +206,33 @@ const POS = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 max-h-80 overflow-auto">
-            {filteredStock.length === 0 && (
+            {filteredGroups.length === 0 && (
               <p className="col-span-full text-center text-sm text-muted-foreground py-6">No products in stock.</p>
             )}
-            {filteredStock.map(p => (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => addProduct(p)}
-                className="text-left p-2.5 rounded-lg border bg-card hover:bg-accent hover:border-primary/50 transition-colors group"
-              >
-                <p className="font-medium text-sm truncate">{p.brand} {p.model}</p>
-                <p className="text-[10px] text-muted-foreground truncate">{p.category ?? "—"}</p>
-                <div className="flex items-center gap-1 mt-1">
-                  <p className="text-[10px] font-mono text-muted-foreground truncate flex-1">{p.imei_serial}</p>
-                  <span
-                    role="button"
-                    tabIndex={0}
-                    onClick={(e) => { e.stopPropagation(); copyId(p.imei_serial); }}
-                    onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); copyId(p.imei_serial); } }}
-                    className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-secondary"
-                    title="Copy product ID"
-                  >
-                    <Copy className="h-3 w-3" />
-                  </span>
-                </div>
-                <div className="flex items-center justify-between mt-1.5">
-                  <span className="text-sm font-semibold">${Number(p.sale_price).toFixed(2)}</span>
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0">{p.quantity} left</Badge>
-                </div>
-              </button>
-            ))}
+            {filteredGroups.map(g => {
+              const inCartQty = g.variants.reduce((s, v) => s + (cart.find(c => c.id === v.id)?.quantity ?? 0), 0);
+              const remaining = g.totalQty - inCartQty;
+              return (
+                <button
+                  key={g.key}
+                  type="button"
+                  onClick={() => addFromGroup(g)}
+                  disabled={remaining <= 0}
+                  className="text-left p-2.5 rounded-lg border bg-card hover:bg-accent hover:border-primary/50 transition-colors group disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <p className="font-medium text-sm truncate">{g.brand} {g.model}</p>
+                  <p className="text-[10px] text-muted-foreground truncate">{g.category ?? "—"}</p>
+                  <div className="flex items-center justify-between mt-1.5">
+                    <span className="text-sm font-semibold">${g.sale_price.toFixed(2)}</span>
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0">{remaining} left</Badge>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </CardContent>
       </Card>
+
 
       <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
         <Card className="border-border/60 shadow-card">
