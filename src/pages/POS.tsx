@@ -1,17 +1,18 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { ScanLine, X, CheckCircle2, Camera, Keyboard, Minus, Plus } from "lucide-react";
+import { ScanLine, X, CheckCircle2, Camera, Keyboard, Minus, Plus, Search, Package, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { parseQrPayload } from "@/lib/qr";
 import { QrScanner } from "@/components/QrScanner";
 import { ReceiptDialog, type ReceiptData } from "@/components/ReceiptDialog";
 
 interface CartItem { id: string; brand: string; model: string; imei_serial: string; sale_price: number; quantity: number; stock: number; }
+interface StockProduct { id: string; brand: string; model: string; category: string | null; imei_serial: string; sale_price: number; quantity: number; }
 
 const POS = () => {
   const [scanning, setScanning] = useState(false);
