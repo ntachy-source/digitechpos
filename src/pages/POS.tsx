@@ -1,17 +1,18 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { ScanLine, X, CheckCircle2, Camera, Keyboard, Minus, Plus } from "lucide-react";
+import { ScanLine, X, CheckCircle2, Camera, Keyboard, Minus, Plus, Search, Package, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { parseQrPayload } from "@/lib/qr";
 import { QrScanner } from "@/components/QrScanner";
 import { ReceiptDialog, type ReceiptData } from "@/components/ReceiptDialog";
 
 interface CartItem { id: string; brand: string; model: string; imei_serial: string; sale_price: number; quantity: number; stock: number; }
+interface StockProduct { id: string; brand: string; model: string; category: string | null; imei_serial: string; sale_price: number; quantity: number; }
 
 const POS = () => {
   const [scanning, setScanning] = useState(false);
@@ -22,8 +23,44 @@ const POS = () => {
   const [customerAddress, setCustomerAddress] = useState("");
   const [busy, setBusy] = useState(false);
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
+  const [stock, setStock] = useState<StockProduct[]>([]);
+  const [stockSearch, setStockSearch] = useState("");
 
   const total = cart.reduce((s, i) => s + Number(i.sale_price) * i.quantity, 0);
+
+  const loadStock = async () => {
+    const { data, error } = await supabase
+      .from("products")
+      .select("id, brand, model, category, imei_serial, sale_price, quantity")
+      .eq("status", "in_stock")
+      .order("brand", { ascending: true });
+    if (error) return toast.error(error.message);
+    setStock((data ?? []) as StockProduct[]);
+  };
+
+  useEffect(() => { loadStock(); }, []);
+
+  const addProduct = (p: StockProduct) => {
+    const existing = cart.find(c => c.id === p.id);
+    if (existing) {
+      if (existing.quantity >= existing.stock) { toast.info("No more stock available"); return; }
+      setCart(prev => prev.map(c => c.id === p.id ? { ...c, quantity: c.quantity + 1 } : c));
+    } else {
+      setCart(prev => [...prev, { id: p.id, brand: p.brand, model: p.model, imei_serial: p.imei_serial, sale_price: Number(p.sale_price), quantity: 1, stock: p.quantity ?? 1 }]);
+    }
+    toast.success(`Added: ${p.brand} ${p.model}`);
+  };
+
+  const copyId = async (val: string) => {
+    try { await navigator.clipboard.writeText(val); toast.success("Product ID copied"); }
+    catch { toast.error("Copy failed"); }
+  };
+
+  const filteredStock = stock.filter(p => {
+    const q = stockSearch.toLowerCase().trim();
+    if (!q) return true;
+    return [p.brand, p.model, p.category, p.imei_serial].some(v => v?.toLowerCase().includes(q));
+  });
 
   const lookupAndAdd = async (raw: string) => {
     const id = parseQrPayload(raw);
@@ -101,14 +138,62 @@ const POS = () => {
       total: snapshotTotal,
     });
     setCart([]); setCustomerName(""); setCustomerPhone(""); setCustomerAddress("");
+    loadStock();
   };
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold">Point of Sale</h1>
-        <p className="text-muted-foreground mt-1 text-sm sm:text-base">Scan a product QR code to add it to the cart.</p>
+        <p className="text-muted-foreground mt-1 text-sm sm:text-base">Pick a product from the list, scan a QR code, or enter an IMEI to add it to the cart.</p>
       </div>
+
+      <Card className="border-border/60 shadow-card">
+        <CardHeader className="pb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <CardTitle className="flex items-center gap-2"><Package className="h-5 w-5 text-primary" /> Products ({filteredStock.length})</CardTitle>
+            <div className="relative w-full sm:max-w-xs">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input value={stockSearch} onChange={e => setStockSearch(e.target.value)} placeholder="Search brand, model, IMEI..." className="pl-9 h-9" />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 max-h-80 overflow-auto">
+            {filteredStock.length === 0 && (
+              <p className="col-span-full text-center text-sm text-muted-foreground py-6">No products in stock.</p>
+            )}
+            {filteredStock.map(p => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => addProduct(p)}
+                className="text-left p-2.5 rounded-lg border bg-card hover:bg-accent hover:border-primary/50 transition-colors group"
+              >
+                <p className="font-medium text-sm truncate">{p.brand} {p.model}</p>
+                <p className="text-[10px] text-muted-foreground truncate">{p.category ?? "—"}</p>
+                <div className="flex items-center gap-1 mt-1">
+                  <p className="text-[10px] font-mono text-muted-foreground truncate flex-1">{p.imei_serial}</p>
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    onClick={(e) => { e.stopPropagation(); copyId(p.imei_serial); }}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); copyId(p.imei_serial); } }}
+                    className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-secondary"
+                    title="Copy product ID"
+                  >
+                    <Copy className="h-3 w-3" />
+                  </span>
+                </div>
+                <div className="flex items-center justify-between mt-1.5">
+                  <span className="text-sm font-semibold">${Number(p.sale_price).toFixed(2)}</span>
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0">{p.quantity} left</Badge>
+                </div>
+              </button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
         <Card className="border-border/60 shadow-card">
