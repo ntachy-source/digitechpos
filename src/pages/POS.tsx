@@ -138,6 +138,7 @@ const POS = () => {
       total: snapshotTotal,
     });
     setCart([]); setCustomerName(""); setCustomerPhone(""); setCustomerAddress("");
+    loadStock();
   };
 
   return (
