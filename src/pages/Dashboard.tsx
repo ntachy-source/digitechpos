@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Package, ShoppingCart, DollarSign, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { ProductQuickAddDialog } from "@/components/ProductQuickAddDialog";
+import { LowStockAlert } from "@/components/LowStockAlert";
 
 interface Stats {
   inStock: number;
@@ -70,7 +71,10 @@ const Dashboard = () => {
         ))}
       </div>
 
+      <LowStockAlert />
+
       <Card className="border-border/60 shadow-card">
+
         <CardHeader>
           <CardTitle>Quick Start</CardTitle>
         </CardHeader>

@@ -88,10 +88,10 @@ Deno.serve(async (req) => {
         userId = list.users.find((u) => u.email === email)?.id ?? null;
       }
       if (!userId) return json({ error: "Could not provision device account" }, 500);
-    } else {
-      // make sure password matches expectation (rotate if needed)
-      await admin.auth.admin.updateUserById(userId, { password });
     }
+    // NOTE: never rotate the password for an existing device account —
+    // updating it revokes all refresh tokens and logs the device out.
+
 
     // 5. Upsert device record
     if (existing) {
