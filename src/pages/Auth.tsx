@@ -47,6 +47,8 @@ const Auth = () => {
       const { error: signErr } = await supabase.auth.signInWithPassword({ email, password });
       if (signErr) throw signErr;
       toast.success(`Welcome, ${client_name}!`);
+      navigate("/dashboard", { replace: true });
+
     } catch (err: any) {
       const msg = err?.message ?? "Activation failed";
       if (/expired/i.test(msg)) {
