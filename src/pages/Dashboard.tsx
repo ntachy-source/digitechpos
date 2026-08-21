@@ -70,7 +70,10 @@ const Dashboard = () => {
         ))}
       </div>
 
+      <LowStockAlert />
+
       <Card className="border-border/60 shadow-card">
+
         <CardHeader>
           <CardTitle>Quick Start</CardTitle>
         </CardHeader>
