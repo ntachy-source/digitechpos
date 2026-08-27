@@ -304,7 +304,7 @@ const POS = () => {
                   </div>
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      <Button size="icon" variant="outline" className="h-9 w-9 shrink-0" onClick={() => updateQty(item.id, -1)} disabled={item.quantity <= 1}>
+                      <Button size="icon" variant="outline" className="h-9 w-9 shrink-0" onClick={() => updateQty(item.id, -1)}>
                         <Minus className="h-4 w-4" />
                       </Button>
                       <div className="flex flex-col items-center">
