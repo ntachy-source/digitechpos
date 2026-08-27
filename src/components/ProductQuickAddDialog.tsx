@@ -56,7 +56,7 @@ export const ProductQuickAddDialog = ({ onAdded, triggerClassName }: ProductQuic
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const qty = Math.max(1, Math.min(100, parseInt(form.quantity) || 1));
+    const qty = Math.max(1, parseInt(form.quantity) || 1);
     const parsed = productSchema.safeParse({
       ...form,
       cost_price: Number(form.cost_price),
@@ -157,7 +157,7 @@ export const ProductQuickAddDialog = ({ onAdded, triggerClassName }: ProductQuic
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-2"><Label>Quantity</Label>
-                <Input type="number" min="1" max="100" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} required />
+                <Input type="number" min="1" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} required />
                 {parseInt(form.quantity) > 1 && (
                   <p className="text-xs text-muted-foreground">Serial numbers will be auto-suffixed (-001, -002, …)</p>
                 )}
