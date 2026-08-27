@@ -25,6 +25,7 @@ const POS = () => {
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
   const [stock, setStock] = useState<StockProduct[]>([]);
   const [stockSearch, setStockSearch] = useState("");
+  const [qtyDraft, setQtyDraft] = useState<Record<string, string>>({});
 
   const total = cart.reduce((s, i) => s + Number(i.sale_price) * i.quantity, 0);
 
