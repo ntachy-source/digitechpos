@@ -148,6 +148,18 @@ const POS = () => {
     }));
   };
 
+  const setPrice = (id: string, value: number) => {
+    setCart(prev => prev.map(c => c.id === id ? { ...c, sale_price: isNaN(value) ? 0 : Math.max(0, value) } : c));
+  };
+
+  const savePriceToProduct = async (id: string, price: number) => {
+    const { error } = await supabase.from("products").update({ sale_price: price }).eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Product price updated");
+    loadStock();
+  };
+
+
   const handleManual = (e: React.FormEvent) => {
     e.preventDefault();
     if (manual.trim()) { lookupAndAdd(manual.trim()); setManual(""); }
