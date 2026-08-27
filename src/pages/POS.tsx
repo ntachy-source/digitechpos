@@ -168,6 +168,14 @@ const POS = () => {
   const checkout = async () => {
     if (cart.length === 0) return toast.error("Cart is empty");
     setBusy(true);
+    // Persist any edited prices so the recorded sale matches the cart
+    for (const c of cart) {
+      const src = stock.find(s => s.id === c.id);
+      if (src && Number(src.sale_price) !== Number(c.sale_price)) {
+        await supabase.from("products").update({ sale_price: Number(c.sale_price) }).eq("id", c.id);
+      }
+    }
+
     const snapshotItems = cart.flatMap(c =>
       Array.from({ length: c.quantity }, () => ({
         brand: c.brand, model: c.model, imei_serial: c.imei_serial, sale_price: Number(c.sale_price),
