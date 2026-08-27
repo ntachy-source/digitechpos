@@ -25,6 +25,7 @@ const POS = () => {
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
   const [stock, setStock] = useState<StockProduct[]>([]);
   const [stockSearch, setStockSearch] = useState("");
+  const [qtyDraft, setQtyDraft] = useState<Record<string, string>>({});
 
   const total = cart.reduce((s, i) => s + Number(i.sale_price) * i.quantity, 0);
 
@@ -302,20 +303,33 @@ const POS = () => {
                     </Button>
                   </div>
                   <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-1">
-                      <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => updateQty(item.id, -1)} disabled={item.quantity <= 1}>
-                        <Minus className="h-3 w-3" />
+                    <div className="flex items-center gap-2">
+                      <Button size="icon" variant="outline" className="h-9 w-9 shrink-0" onClick={() => updateQty(item.id, -1)} disabled={item.quantity <= 1}>
+                        <Minus className="h-4 w-4" />
                       </Button>
-                      <Input
-                        type="number"
-                        min={1}
-                        max={item.stock}
-                        value={item.quantity}
-                        onChange={e => setQty(item.id, Number(e.target.value))}
-                        className="h-8 w-16 text-center"
-                      />
-                      <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => updateQty(item.id, 1)} disabled={item.quantity >= item.stock}>
-                        <Plus className="h-3 w-3" />
+                      <div className="flex flex-col items-center">
+                        <Label className="text-[10px] text-muted-foreground leading-none mb-0.5">Qty</Label>
+                        <Input
+                          type="number"
+                          inputMode="numeric"
+                          min={1}
+                          max={item.stock}
+                          value={qtyDraft[item.id] ?? item.quantity}
+                          onChange={e => setQtyDraft(prev => ({ ...prev, [item.id]: e.target.value }))}
+                          onBlur={() => {
+                            const raw = qtyDraft[item.id];
+                            if (raw !== undefined) {
+                              const val = Number(raw);
+                              if (!isNaN(val)) setQty(item.id, val);
+                              setQtyDraft(prev => { const d = { ...prev }; delete d[item.id]; return d; });
+                            }
+                          }}
+                          onKeyDown={e => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                          className="h-9 w-20 text-center px-1"
+                        />
+                      </div>
+                      <Button size="icon" variant="outline" className="h-9 w-9 shrink-0" onClick={() => updateQty(item.id, 1)} disabled={item.quantity >= item.stock}>
+                        <Plus className="h-4 w-4" />
                       </Button>
                     </div>
                     <Badge variant="outline" className="font-semibold">${(Number(item.sale_price) * item.quantity).toFixed(2)}</Badge>
