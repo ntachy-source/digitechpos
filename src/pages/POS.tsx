@@ -148,6 +148,18 @@ const POS = () => {
     }));
   };
 
+  const setPrice = (id: string, value: number) => {
+    setCart(prev => prev.map(c => c.id === id ? { ...c, sale_price: isNaN(value) ? 0 : Math.max(0, value) } : c));
+  };
+
+  const savePriceToProduct = async (id: string, price: number) => {
+    const { error } = await supabase.from("products").update({ sale_price: price }).eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Product price updated");
+    loadStock();
+  };
+
+
   const handleManual = (e: React.FormEvent) => {
     e.preventDefault();
     if (manual.trim()) { lookupAndAdd(manual.trim()); setManual(""); }
@@ -156,6 +168,14 @@ const POS = () => {
   const checkout = async () => {
     if (cart.length === 0) return toast.error("Cart is empty");
     setBusy(true);
+    // Persist any edited prices so the recorded sale matches the cart
+    for (const c of cart) {
+      const src = stock.find(s => s.id === c.id);
+      if (src && Number(src.sale_price) !== Number(c.sale_price)) {
+        await supabase.from("products").update({ sale_price: Number(c.sale_price) }).eq("id", c.id);
+      }
+    }
+
     const snapshotItems = cart.flatMap(c =>
       Array.from({ length: c.quantity }, () => ({
         brand: c.brand, model: c.model, imei_serial: c.imei_serial, sale_price: Number(c.sale_price),
@@ -275,7 +295,7 @@ const POS = () => {
                     <div className="min-w-0">
                       <p className="font-medium truncate">{item.brand} {item.model}</p>
                       <p className="text-xs font-mono text-muted-foreground truncate">{item.imei_serial}</p>
-                      <p className="text-xs text-muted-foreground">${Number(item.sale_price).toFixed(2)} each · {item.stock} in stock</p>
+                      <p className="text-xs text-muted-foreground">{item.stock} in stock</p>
                     </div>
                     <Button size="icon" variant="ghost" onClick={() => setCart(cart.filter(c => c.id !== item.id))}>
                       <X className="h-4 w-4" />
@@ -300,6 +320,26 @@ const POS = () => {
                     </div>
                     <Badge variant="outline" className="font-semibold">${(Number(item.sale_price) * item.quantity).toFixed(2)}</Badge>
                   </div>
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs whitespace-nowrap">Unit price</Label>
+                    <div className="relative flex-1">
+                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
+                      <Input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={item.sale_price}
+                        onChange={e => setPrice(item.id, parseFloat(e.target.value))}
+                        className="h-8 pl-5"
+                      />
+                    </div>
+                    {Number(stock.find(s => s.id === item.id)?.sale_price ?? item.sale_price) !== Number(item.sale_price) && (
+                      <Button size="sm" variant="outline" className="h-8" onClick={() => savePriceToProduct(item.id, Number(item.sale_price))}>
+                        Save
+                      </Button>
+                    )}
+                  </div>
+
                 </div>
               ))}
             </div>
