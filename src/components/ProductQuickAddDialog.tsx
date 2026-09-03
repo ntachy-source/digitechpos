@@ -73,25 +73,24 @@ export const ProductQuickAddDialog = ({ onAdded, triggerClassName }: ProductQuic
       if (!licenseId) throw new Error("No active license found");
       const { data: { user } } = await supabase.auth.getUser();
 
-      const rows = Array.from({ length: qty }, (_, i) => {
-        const serial = qty === 1 ? parsed.data.imei_serial : `${parsed.data.imei_serial}-${String(i + 1).padStart(3, "0")}`;
-        return {
-          brand: parsed.data.brand,
-          model: parsed.data.model,
-          category: parsed.data.category,
-          imei_serial: serial,
-          cost_price: parsed.data.cost_price,
-          sale_price: parsed.data.sale_price,
-          notes: parsed.data.notes,
-          qr_code: generateQrPayload(serial),
-          created_by: user?.id,
-          license_id: licenseId,
-        } as any;
-      });
+      // One row per product — quantity is tracked on the row itself
+      const row = {
+        brand: parsed.data.brand,
+        model: parsed.data.model,
+        category: parsed.data.category,
+        imei_serial: parsed.data.imei_serial,
+        cost_price: parsed.data.cost_price,
+        sale_price: parsed.data.sale_price,
+        notes: parsed.data.notes,
+        quantity: qty,
+        qr_code: generateQrPayload(parsed.data.imei_serial),
+        created_by: user?.id,
+        license_id: licenseId,
+      } as any;
 
-      const { data, error } = await supabase.from("products").insert(rows).select();
+      const { data, error } = await supabase.from("products").insert(row).select();
       if (error) throw error;
-      toast.success(`${qty} product${qty > 1 ? "s" : ""} added`);
+      toast.success(qty > 1 ? `Product added with ${qty} in stock` : "Product added");
       setOpen(false);
       setForm(emptyForm);
       setCustomCategory(false);
@@ -159,13 +158,13 @@ export const ProductQuickAddDialog = ({ onAdded, triggerClassName }: ProductQuic
               <div className="space-y-2"><Label>Quantity</Label>
                 <Input type="number" min="1" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} required />
                 {parseInt(form.quantity) > 1 && (
-                  <p className="text-xs text-muted-foreground">Serial numbers will be auto-suffixed (-001, -002, …)</p>
+                  <p className="text-xs text-muted-foreground">One product entry will be created with {parseInt(form.quantity)} in stock.</p>
                 )}
               </div>
               <div className="space-y-2"><Label>Notes</Label>
                 <Textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} maxLength={500} /></div>
             </div>
-            <Button type="submit" className="w-full" disabled={busy}>{busy ? "Adding..." : `Add ${parseInt(form.quantity) > 1 ? parseInt(form.quantity) + " Products" : "& Generate QR"}`}</Button>
+            <Button type="submit" className="w-full" disabled={busy}>{busy ? "Adding..." : `Add ${parseInt(form.quantity) > 1 ? "Product (Qty " + parseInt(form.quantity) + ")" : "& Generate QR"}`}</Button>
           </form>
         </DialogContent>
       </Dialog>
