@@ -73,25 +73,24 @@ export const ProductQuickAddDialog = ({ onAdded, triggerClassName }: ProductQuic
       if (!licenseId) throw new Error("No active license found");
       const { data: { user } } = await supabase.auth.getUser();
 
-      const rows = Array.from({ length: qty }, (_, i) => {
-        const serial = qty === 1 ? parsed.data.imei_serial : `${parsed.data.imei_serial}-${String(i + 1).padStart(3, "0")}`;
-        return {
-          brand: parsed.data.brand,
-          model: parsed.data.model,
-          category: parsed.data.category,
-          imei_serial: serial,
-          cost_price: parsed.data.cost_price,
-          sale_price: parsed.data.sale_price,
-          notes: parsed.data.notes,
-          qr_code: generateQrPayload(serial),
-          created_by: user?.id,
-          license_id: licenseId,
-        } as any;
-      });
+      // One row per product — quantity is tracked on the row itself
+      const row = {
+        brand: parsed.data.brand,
+        model: parsed.data.model,
+        category: parsed.data.category,
+        imei_serial: parsed.data.imei_serial,
+        cost_price: parsed.data.cost_price,
+        sale_price: parsed.data.sale_price,
+        notes: parsed.data.notes,
+        quantity: qty,
+        qr_code: generateQrPayload(parsed.data.imei_serial),
+        created_by: user?.id,
+        license_id: licenseId,
+      } as any;
 
-      const { data, error } = await supabase.from("products").insert(rows).select();
+      const { data, error } = await supabase.from("products").insert(row).select();
       if (error) throw error;
-      toast.success(`${qty} product${qty > 1 ? "s" : ""} added`);
+      toast.success(qty > 1 ? `Product added with ${qty} in stock` : "Product added");
       setOpen(false);
       setForm(emptyForm);
       setCustomCategory(false);
