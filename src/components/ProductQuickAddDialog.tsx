@@ -158,13 +158,13 @@ export const ProductQuickAddDialog = ({ onAdded, triggerClassName }: ProductQuic
               <div className="space-y-2"><Label>Quantity</Label>
                 <Input type="number" min="1" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} required />
                 {parseInt(form.quantity) > 1 && (
-                  <p className="text-xs text-muted-foreground">Serial numbers will be auto-suffixed (-001, -002, …)</p>
+                  <p className="text-xs text-muted-foreground">One product entry will be created with {parseInt(form.quantity)} in stock.</p>
                 )}
               </div>
               <div className="space-y-2"><Label>Notes</Label>
                 <Textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} maxLength={500} /></div>
             </div>
-            <Button type="submit" className="w-full" disabled={busy}>{busy ? "Adding..." : `Add ${parseInt(form.quantity) > 1 ? parseInt(form.quantity) + " Products" : "& Generate QR"}`}</Button>
+            <Button type="submit" className="w-full" disabled={busy}>{busy ? "Adding..." : `Add ${parseInt(form.quantity) > 1 ? "Product (Qty " + parseInt(form.quantity) + ")" : "& Generate QR"}`}</Button>
           </form>
         </DialogContent>
       </Dialog>
