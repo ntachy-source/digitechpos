@@ -17,7 +17,7 @@ const Auth = () => {
   const { user, loading } = useAuth();
 
   useEffect(() => {
-    document.title = "Activate License · SGH POS";
+    document.title = "Activate License · Smart Mpofu Technologies";
   }, []);
 
   useEffect(() => {
@@ -71,7 +71,7 @@ const Auth = () => {
           <div className="mx-auto h-12 w-12 rounded-xl bg-gradient-primary flex items-center justify-center shadow-card">
             <ShieldCheck className="h-6 w-6 text-primary-foreground" />
           </div>
-          <CardTitle className="text-2xl">SGH POS</CardTitle>
+          <CardTitle className="text-2xl">Smart Mpofu Technologies</CardTitle>
           <CardDescription>Enter your license key to activate this device</CardDescription>
         </CardHeader>
         <CardContent>

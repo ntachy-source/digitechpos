@@ -1,0 +1,1 @@
+ALTER TABLE public.business_settings ALTER COLUMN business_name SET DEFAULT 'Smart Mpofu Technologies';

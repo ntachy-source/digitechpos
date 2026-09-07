@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getActiveLicenseId } from "@/lib/license";
 
 export const useBusinessName = () => {
-  const [name, setName] = useState<string>("SGH POS");
+  const [name, setName] = useState<string>("Smart Mpofu Technologies");
   const [tagline, setTagline] = useState<string>("Gadget Store");
 
   const load = async () => {

@@ -26,7 +26,7 @@ interface BusinessInfo {
 }
 
 const FALLBACK: BusinessInfo = {
-  business_name: "SGH Gadget Store",
+  business_name: "Smart Mpofu Technologies",
   address: "9th Ave & J. Moyo, Amaya Mall Shop 35",
   phone: "0775545181",
   email: null,
