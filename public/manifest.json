@@ -1,6 +1,6 @@
 {
-  "name": "Smart Mpofu Technologies — Gadget Store",
-  "short_name": "Smart Mpofu Technologies",
+  "name": "Smart Mpofu Technologies POS",
+  "short_name": "Smart Mpofu",
   "description": "QR-based inventory & POS for gadget stores.",
   "start_url": "/",
   "scope": "/",
