@@ -17,7 +17,7 @@ const Products = () => {
   const [editProduct, setEditProduct] = useState<any | null>(null);
 
   useEffect(() => {
-    document.title = "Products · SGH POS";
+    document.title = "Products · Smart Mpofu Technologies";
     load();
   }, []);
 

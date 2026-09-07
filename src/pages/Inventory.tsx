@@ -54,7 +54,7 @@ const Inventory = () => {
   const [customCategory, setCustomCategory] = useState(false);
   const [form, setForm] = useState(emptyForm);
 
-  useEffect(() => { document.title = "Inventory · SGH POS"; load(); }, []);
+  useEffect(() => { document.title = "Inventory · Smart Mpofu Technologies"; load(); }, []);
 
   const load = async () => {
     const { data, error } = await supabase
