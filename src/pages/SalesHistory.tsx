@@ -18,7 +18,7 @@ const SalesHistory = () => {
   const [sales, setSales] = useState<SaleRow[]>([]);
 
   useEffect(() => {
-    document.title = "Sales History · Smart Mpofu Technologies";
+    document.title = "Sales History · MPOFU Technologies";
     (async () => {
       const { data } = await supabase
         .from("sales")

@@ -58,7 +58,7 @@ const Invoices = () => {
   const [client, setClient] = useState({ name: "", phone: "", email: "", address: "" });
   const [notes, setNotes] = useState("");
 
-  useEffect(() => { document.title = "Invoices · Smart Mpofu Technologies"; load(); loadBusinessSettings(); }, []);
+  useEffect(() => { document.title = "Invoices · MPOFU Technologies"; load(); loadBusinessSettings(); }, []);
 
   const load = async () => {
     const [{ data: inv }, { data: sl }] = await Promise.all([
@@ -77,7 +77,7 @@ const Invoices = () => {
       if (error) throw error;
       if (data) { setBusinessSettings(data as any); return; }
       const { data: created, error: createError } = await supabase.from("business_settings").insert({
-        business_name: "Smart Mpofu Technologies",
+        business_name: "MPOFU Technologies",
         license_id: licenseId,
       } as any).select("*").single();
       if (createError) throw createError;
@@ -121,7 +121,7 @@ const Invoices = () => {
       const { error } = await supabase.storage.from("logos").upload(path, file, { upsert: true });
       if (error) throw error;
       const { data: { publicUrl } } = supabase.storage.from("logos").getPublicUrl(path);
-      const payload = { business_name: businessSettings?.business_name || "Smart Mpofu Technologies", logo_url: publicUrl, license_id: licenseId } as any;
+      const payload = { business_name: businessSettings?.business_name || "MPOFU Technologies", logo_url: publicUrl, license_id: licenseId } as any;
       const { data, error: saveError } = businessSettings?.id
         ? await supabase.from("business_settings").update({ logo_url: publicUrl }).eq("id", businessSettings.id).select("*").single()
         : await supabase.from("business_settings").insert(payload).select("*").single();

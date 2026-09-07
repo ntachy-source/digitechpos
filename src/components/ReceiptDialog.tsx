@@ -26,7 +26,7 @@ interface BusinessInfo {
 }
 
 const FALLBACK: BusinessInfo = {
-  business_name: "Smart Mpofu Technologies",
+  business_name: "MPOFU Technologies",
   address: "9th Ave & J. Moyo, Amaya Mall Shop 35",
   phone: "0775545181",
   email: null,
