@@ -101,7 +101,7 @@ const buildReceiptHtml = (receipt: ReceiptData, biz: BusinessInfo) => {
         ${biz.tax_id ? `<div class="biz-line">Tax ID: ${escapeHtml(biz.tax_id)}</div>` : ""}
       </div>
       <div class="double"></div>
-      <div class="center" style="font-weight:700;font-size:12px;margin-bottom:4px">SALES RECEIPT</div>
+      <div class="center" style="font-weight:700;font-size:8pt;margin-bottom:2px">SALES RECEIPT</div>
       <div class="meta">
         <div><span>Receipt #</span><span>${receipt.saleId.slice(0, 8).toUpperCase()}</span></div>
         <div><span>Date</span><span>${escapeHtml(date)}</span></div>
