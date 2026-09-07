@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Building2, Upload, Image as ImageIcon } from "lucide-react";
+import { Building2, Upload, Image as ImageIcon, Palette, Check } from "lucide-react";
+import { ACCENTS, applyAccent, getStoredAccent } from "@/lib/accent";
 import { getActiveLicenseId } from "@/lib/license";
 
 interface Settings {
@@ -24,6 +25,9 @@ const Settings = () => {
   const [s, setS] = useState<Settings | null>(null);
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [accent, setAccent] = useState<string>(getStoredAccent());
+
+  const pickAccent = (id: string) => { setAccent(id); applyAccent(id); toast.success("Accent colour updated"); };
 
 
   useEffect(() => { document.title = "Settings · SGH POS"; load(); }, []);
@@ -101,6 +105,28 @@ const Settings = () => {
               <input id="logo" type="file" accept="image/*" className="hidden" onChange={onLogo} disabled={uploading} />
               <p className="text-xs text-muted-foreground mt-2">PNG/JPG, max 2MB. Recommended square.</p>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle className="flex items-center gap-2"><Palette className="h-5 w-5" /> Accent colour</CardTitle></CardHeader>
+        <CardContent>
+          <p className="text-xs text-muted-foreground mb-3">Pick the highlight colour used across buttons, links and menus.</p>
+          <div className="flex flex-wrap gap-3">
+            {ACCENTS.map(a => (
+              <button
+                key={a.id}
+                type="button"
+                onClick={() => pickAccent(a.id)}
+                aria-label={a.label}
+                title={a.label}
+                className={`h-10 w-10 rounded-full border-2 grid place-items-center transition ${accent === a.id ? "border-foreground scale-105" : "border-transparent"}`}
+                style={{ backgroundColor: a.swatch }}
+              >
+                {accent === a.id && <Check className="h-4 w-4 text-white" />}
+              </button>
+            ))}
           </div>
         </CardContent>
       </Card>
