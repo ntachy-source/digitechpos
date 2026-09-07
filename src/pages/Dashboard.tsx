@@ -5,6 +5,7 @@ import { Package, ShoppingCart, DollarSign, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { ProductQuickAddDialog } from "@/components/ProductQuickAddDialog";
 import { LowStockAlert } from "@/components/LowStockAlert";
+import { useBusinessName } from "@/hooks/useBusinessName";
 
 interface Stats {
   inStock: number;
@@ -15,6 +16,7 @@ interface Stats {
 
 const Dashboard = () => {
   const { role } = useAuth();
+  const { name: bizName } = useBusinessName();
   const [stats, setStats] = useState<Stats>({ inStock: 0, soldToday: 0, revenueToday: 0, totalSold: 0 });
 
   useEffect(() => {
@@ -49,8 +51,8 @@ const Dashboard = () => {
     <div className="space-y-6 sm:space-y-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground mt-1 text-sm sm:text-base">Welcome back. Here's a snapshot of your store.</p>
+          <h1 className="text-2xl sm:text-3xl font-bold">{bizName}</h1>
+          <p className="text-muted-foreground mt-1 text-sm sm:text-base">Dashboard — here's a snapshot of your store.</p>
         </div>
         <ProductQuickAddDialog onAdded={load} triggerClassName="w-full sm:w-auto" />
       </div>
