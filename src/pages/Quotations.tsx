@@ -65,7 +65,7 @@ const Quotations = () => {
   const [validUntil, setValidUntil] = useState("");
 
   useEffect(() => {
-    document.title = "Quotations · Smart Mpofu Technologies";
+    document.title = "Quotations · MPOFU Technologies";
     load();
     loadBiz();
   }, []);

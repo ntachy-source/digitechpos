@@ -10,7 +10,7 @@ const Reports = () => {
   const [recent, setRecent] = useState<any[]>([]);
   const [totals, setTotals] = useState({ revenue: 0, count: 0 });
 
-  useEffect(() => { document.title = "Reports · Smart Mpofu Technologies"; load(); }, []);
+  useEffect(() => { document.title = "Reports · MPOFU Technologies"; load(); }, []);
 
   const load = async () => {
     const since = startOfDay(subDays(new Date(), 6)).toISOString();

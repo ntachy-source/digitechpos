@@ -70,7 +70,7 @@ const Licenses = () => {
     finally { setRenewBusy(false); }
   };
 
-  useEffect(() => { document.title = "Licenses · Smart Mpofu Technologies"; load(); }, []);
+  useEffect(() => { document.title = "Licenses · MPOFU Technologies"; load(); }, []);
 
   const load = async () => {
     const [{ data: l }, { data: d }] = await Promise.all([

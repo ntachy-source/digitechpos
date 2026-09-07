@@ -30,7 +30,7 @@ const Settings = () => {
   const pickAccent = (id: string) => { setAccent(id); applyAccent(id); toast.success("Accent colour updated"); };
 
 
-  useEffect(() => { document.title = "Settings · Smart Mpofu Technologies"; load(); }, []);
+  useEffect(() => { document.title = "Settings · MPOFU Technologies"; load(); }, []);
 
   const load = async () => {
     const licenseId = await getActiveLicenseId();
@@ -39,7 +39,7 @@ const Settings = () => {
     if (error) return toast.error(error.message);
     if (data) { setS(data as Settings); return; }
     const { data: created, error: createError } = await supabase.from("business_settings").insert({
-      business_name: "Smart Mpofu Technologies",
+      business_name: "MPOFU Technologies",
       license_id: licenseId,
     } as any).select("*").single();
     if (createError) return toast.error(createError.message);

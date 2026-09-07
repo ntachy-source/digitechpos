@@ -20,7 +20,7 @@ const Dashboard = () => {
   const [stats, setStats] = useState<Stats>({ inStock: 0, soldToday: 0, revenueToday: 0, totalSold: 0 });
 
   useEffect(() => {
-    document.title = "Dashboard · Smart Mpofu Technologies";
+    document.title = "Dashboard · MPOFU Technologies";
     load();
   }, []);
 
