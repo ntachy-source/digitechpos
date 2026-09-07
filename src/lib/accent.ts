@@ -15,7 +15,7 @@ export const ACCENTS: AccentPreset[] = [
   { id: "amber", label: "Amber", primary: "32 95% 44%", glow: "38 92% 55%", ring: "32 95% 44%", swatch: "#d97706" },
   { id: "rose", label: "Rose", primary: "347 77% 50%", glow: "350 89% 65%", ring: "347 77% 50%", swatch: "#e11d48" },
   { id: "teal", label: "Teal", primary: "185 85% 35%", glow: "187 85% 45%", ring: "185 85% 35%", swatch: "#0d9488" },
-  { id: "slate", label: "Graphite", primary: "222 30% 30%", glow: "222 25% 45%", ring: "222 30% 30%", swatch: "#3b4câ€‹63".replace("â€‹", "") },
+  { id: "slate", label: "Graphite", primary: "222 30% 30%", glow: "222 25% 45%", ring: "222 30% 30%", swatch: "#3b4863" },
 ];
 
 const KEY = "accent-color";
