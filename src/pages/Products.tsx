@@ -7,6 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { QrCode, Search, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { downloadTablePdf, money } from "@/lib/pdfExport";
+import { useBusinessName } from "@/hooks/useBusinessName";
+import { Download } from "lucide-react";
+
 import { QrPrintDialog } from "@/components/QrPrintDialog";
 import { ProductEditDialog } from "@/components/ProductEditDialog";
 
@@ -36,15 +40,19 @@ const Products = () => {
     load();
   };
 
+  const { name: bizName } = useBusinessName();
   const filtered = products.filter(p =>
     [p.brand, p.model, p.imei_serial].some(v => v?.toLowerCase().includes(search.toLowerCase()))
   );
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold">Products</h1>
-        <p className="text-muted-foreground mt-1 text-sm sm:text-base">Browse all products and view their QR codes.</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold">Products</h1>
+          <p className="text-muted-foreground mt-1 text-sm sm:text-base">Browse all products and view their QR codes.</p>
+        </div>
+        <Button variant="outline" className="w-full sm:w-auto" onClick={() => downloadTablePdf({ title: "Product List", businessName: bizName, filename: "products", head: ["Product", "Category", "IMEI / Serial", "Qty", "Price", "Status"], rows: filtered.map((p: any) => [`${p.brand} ${p.model}`, p.category ?? "", p.imei_serial, p.quantity ?? 1, money(p.sale_price), p.status]) })}><Download className="h-4 w-4 mr-2" /> Download PDF</Button>
       </div>
 
       <Card className="border-border/60 shadow-card">

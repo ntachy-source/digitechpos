@@ -4,6 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { History } from "lucide-react";
 import { format } from "date-fns";
+import { Button } from "@/components/ui/button";
+import { downloadTablePdf, money } from "@/lib/pdfExport";
+import { useBusinessName } from "@/hooks/useBusinessName";
+import { Download } from "lucide-react";
+
 
 interface SaleRow {
   id: string;
@@ -16,6 +21,7 @@ interface SaleRow {
 
 const SalesHistory = () => {
   const [sales, setSales] = useState<SaleRow[]>([]);
+  const { name: bizName } = useBusinessName();
 
   useEffect(() => {
     document.title = "Sales History · MPOFU Technologies";
@@ -37,11 +43,14 @@ const SalesHistory = () => {
 
   return (
     <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
       <div>
         <h1 className="text-xl sm:text-2xl md:text-3xl font-bold flex items-center gap-2">
           <History className="h-6 w-6 sm:h-7 sm:w-7 text-primary shrink-0" /> Sales History
         </h1>
         <p className="text-muted-foreground mt-1 text-xs sm:text-sm">All completed sales transactions.</p>
+      </div>
+        <Button variant="outline" className="w-full sm:w-auto" onClick={() => downloadTablePdf({ title: "Sales History", businessName: bizName, filename: "sales-history", summary: [["Sales", String(sales.length)], ["Total revenue", money(sales.reduce((t, s) => t + Number(s.total), 0))]], head: ["Date", "Customer", "Phone", "Items", "Total"], rows: sales.map(s => [format(new Date(s.created_at), "PPp"), s.customer_name || "Walk-in", s.customer_phone || "", s.items_count ?? 0, money(s.total)]) })}><Download className="h-4 w-4 mr-2" /> Download PDF</Button>
       </div>
 
       <Card>

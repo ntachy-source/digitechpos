@@ -12,6 +12,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, QrCode, Trash2, Search, Pencil } from "lucide-react";
 import { toast } from "sonner";
+import { downloadTablePdf, money } from "@/lib/pdfExport";
+import { useBusinessName } from "@/hooks/useBusinessName";
+import { Download } from "lucide-react";
+
 import { generateQrPayload } from "@/lib/qr";
 import { QrPrintDialog } from "@/components/QrPrintDialog";
 import { getActiveLicenseId } from "@/lib/license";
@@ -146,6 +150,7 @@ const Inventory = () => {
     load();
   };
 
+  const { name: bizName } = useBusinessName();
   const filtered = products.filter(p =>
     [p.brand, p.model, p.imei_serial].some(v => v?.toLowerCase().includes(search.toLowerCase()))
   );
@@ -157,7 +162,10 @@ const Inventory = () => {
           <h1 className="text-2xl sm:text-3xl font-bold">Inventory</h1>
           <p className="text-muted-foreground mt-1 text-sm sm:text-base">Manage products and generate QR labels.</p>
         </div>
-        <Button onClick={openAdd} className="w-full sm:w-auto"><Plus className="h-4 w-4 mr-2" /> Add Product</Button>
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <Button variant="outline" onClick={() => downloadTablePdf({ title: "Inventory", businessName: bizName, filename: "inventory", landscape: true, head: ["Product", "Category", "IMEI / Serial", "Qty", "Cost", "Price", "Status"], rows: filtered.map((p: any) => [`${p.brand} ${p.model}`, p.category ?? "", p.imei_serial, p.quantity ?? 1, money(p.cost_price), money(p.sale_price), p.status]) })}><Download className="h-4 w-4 mr-2" /> Download PDF</Button>
+          <Button onClick={openAdd}><Plus className="h-4 w-4 mr-2" /> Add Product</Button>
+        </div>
         <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setEditingId(null); setForm(emptyForm); } }}>
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader><DialogTitle>{editingId ? "Edit Product" : "Stock-in New Product"}</DialogTitle></DialogHeader>
