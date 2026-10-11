@@ -4,11 +4,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { format, subDays, startOfDay } from "date-fns";
+import { Button } from "@/components/ui/button";
+import { downloadTablePdf, money } from "@/lib/pdfExport";
+import { useBusinessName } from "@/hooks/useBusinessName";
+import { Download } from "lucide-react";
+
 
 const Reports = () => {
   const [chartData, setChartData] = useState<{ day: string; revenue: number; sales: number }[]>([]);
   const [recent, setRecent] = useState<any[]>([]);
   const [totals, setTotals] = useState({ revenue: 0, count: 0 });
+  const { name: bizName } = useBusinessName();
 
   useEffect(() => { document.title = "Reports · MPOFU Technologies"; load(); }, []);
 
@@ -44,9 +50,12 @@ const Reports = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold">Reports</h1>
-        <p className="text-muted-foreground mt-1 text-sm sm:text-base">Last 7 days of sales activity.</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold">Reports</h1>
+          <p className="text-muted-foreground mt-1 text-sm sm:text-base">Last 7 days of sales activity.</p>
+        </div>
+        <Button variant="outline" className="w-full sm:w-auto" onClick={() => downloadTablePdf({ title: "7-Day Sales Report", businessName: bizName, filename: "sales-report", summary: [["Revenue", money(totals.revenue)], ["Sales", String(totals.count)]], head: ["Day", "Sales", "Revenue"], rows: chartData.map(d => [d.day, d.sales, money(d.revenue)]) })}><Download className="h-4 w-4 mr-2" /> Download PDF</Button>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
